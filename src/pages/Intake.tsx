@@ -112,8 +112,8 @@ const Intake = () => {
                 Section {currentStep + 1} of {sections.length}
               </p>
               <div className="space-y-6">
-                {section!.fields.map((field) => (
-                  <FormField key={field.id} field={field} error={errors.has(field.id)} />
+                {section!.fields.map((field, idx) => (
+                  <FormField key={field.id} field={field} error={errors.has(field.id)} questionNumber={idx + 1} />
                 ))}
               </div>
             </>

@@ -8,9 +8,10 @@ import { cn } from "@/lib/utils";
 interface FormFieldProps {
   field: FieldConfig;
   error?: boolean;
+  questionNumber?: number;
 }
 
-const FormField = ({ field, error }: FormFieldProps) => {
+const FormField = ({ field, error, questionNumber }: FormFieldProps) => {
   const store = useIntakeStore();
   const value = store[field.id as keyof IntakeFormData];
 
@@ -33,6 +34,7 @@ const FormField = ({ field, error }: FormFieldProps) => {
       isConditional ? "animate-slide-down overflow-hidden" : "animate-fade-in"
     )}>
       <Label className="text-sm font-medium text-card-foreground leading-relaxed">
+        {questionNumber != null && <span className="text-muted-foreground mr-1.5">{questionNumber}.</span>}
         {field.label}
         {field.required && <span className="text-destructive ml-1">*</span>}
         {field.maxSelect && (
