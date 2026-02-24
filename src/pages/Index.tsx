@@ -48,11 +48,7 @@ const Index = () => {
 
       {/* Hero */}
       <main className="flex-1 flex flex-col items-center justify-center px-6 pb-10">
-        <div className="max-w-3xl text-center space-y-8">
-          <div className="inline-block px-4 py-1.5 rounded-full border border-primary/30 bg-primary/5 text-primary text-xs font-medium tracking-wide mb-2">
-            Institutional-Grade AI Strategy
-          </div>
-
+        <div className="max-w-3xl text-center space-y-5">
           <h1 className="text-4xl sm:text-5xl lg:text-6xl font-serif leading-tight tracking-tight">
             AI Strategic Planner
           </h1>
@@ -66,7 +62,7 @@ const Index = () => {
           </p>
 
           {/* CTA — conditional on access */}
-          <div className="pt-4">
+          <div className="pt-2">
             {hasAccess ? (
               <Button
                 variant="hero"
@@ -90,7 +86,7 @@ const Index = () => {
           </div>
 
           {/* Feature pills */}
-          <div className="flex flex-wrap items-center justify-center gap-6 pt-4 text-muted-foreground text-sm">
+          <div className="flex flex-wrap items-center justify-center gap-6 pt-2 text-muted-foreground text-sm">
             <div className="flex items-center gap-2">
               <Shield className="w-4 h-4 text-primary" />
               <span>Enterprise Governance</span>
@@ -107,7 +103,7 @@ const Index = () => {
         </div>
 
         {/* How it works */}
-        <div className="w-full max-w-4xl mt-20 sm:mt-28">
+        <div className="w-full max-w-4xl mt-14 sm:mt-20">
           <h2 className="font-serif text-2xl sm:text-3xl text-center mb-12">
             How It Works
           </h2>
