@@ -18,7 +18,7 @@ export default function AndreaSuggestedPrompts({
           key={prompt}
           onClick={() => onSelect(prompt)}
           disabled={disabled}
-          className="text-xs px-3 py-1.5 rounded-full border border-primary/30 text-primary hover:bg-primary/10 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+          className="text-xs px-3 py-1.5 rounded-full border border-primary/30 text-card-foreground hover:bg-primary/10 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
         >
           {prompt}
         </button>
