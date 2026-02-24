@@ -39,9 +39,11 @@ const Index = () => {
   return (
     <div className="min-h-screen hero-gradient flex flex-col">
       {/* Nav */}
-      <nav className="w-full px-6 py-4 flex items-center justify-between max-w-6xl mx-auto bg-muted/60 rounded-b-lg">
-        <img src={smLogo} alt="SM Advisors" className="h-8 sm:h-10" />
-        <AdminBar />
+      <nav className="w-full px-6 py-4 bg-[hsl(210,20%,95%)]">
+        <div className="flex items-center justify-between max-w-6xl mx-auto">
+          <img src={smLogo} alt="SM Advisors" className="h-8 sm:h-10" />
+          <AdminBar />
+        </div>
       </nav>
 
       {/* Hero */}
@@ -131,7 +133,7 @@ const Index = () => {
       </main>
 
       {/* Footer */}
-      <footer className="py-4 mx-auto w-full max-w-6xl bg-muted/60 rounded-t-lg" />
+      <footer className="w-full py-4 bg-[hsl(210,20%,95%)]" />
     </div>
   );
 };
