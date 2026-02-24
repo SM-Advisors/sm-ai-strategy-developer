@@ -1,4 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;1,9..40,400&family=DM+Serif+Display&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;1,9..40,400&family=DM+Serif+Display&family=Playfair+Display:ital,wght@0,400;0,500;0,600;0,700;1,400&display=swap');
 
 @tailwind base;
 @tailwind components;
@@ -55,6 +55,7 @@
     --progress-track: 222 25% 15%;
     --progress-active: 38 92% 50%;
     --card-border: 220 15% 90%;
+    --plan-section-divider: 220 15% 92%;
   }
 
   * {
@@ -87,5 +88,45 @@
 
   .card-elevated {
     box-shadow: 0 4px 24px -4px hsl(222 47% 7% / 0.15);
+  }
+
+  .plan-heading-serif {
+    font-family: 'Playfair Display', 'DM Serif Display', Georgia, serif;
+  }
+}
+
+/* Print styles */
+@media print {
+  body {
+    background: white !important;
+    color: #1a1a2e !important;
+  }
+
+  .print-hidden {
+    display: none !important;
+  }
+
+  .plan-content-area {
+    max-width: 100% !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    box-shadow: none !important;
+  }
+
+  .plan-article h2 {
+    page-break-before: always;
+  }
+
+  .plan-article h2:first-of-type {
+    page-break-before: avoid;
+  }
+
+  .plan-article table {
+    page-break-inside: avoid;
+  }
+
+  @page {
+    margin: 1in;
+    size: letter;
   }
 }
