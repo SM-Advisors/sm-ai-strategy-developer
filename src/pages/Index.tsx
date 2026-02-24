@@ -39,7 +39,7 @@ const Index = () => {
   return (
     <div className="min-h-screen hero-gradient flex flex-col">
       {/* Nav */}
-      <nav className="w-full px-6 py-5 flex items-center justify-between max-w-6xl mx-auto">
+      <nav className="w-full px-6 py-4 flex items-center justify-between max-w-6xl mx-auto bg-muted/60 rounded-b-lg">
         <img src={smLogo} alt="SM Advisors" className="h-8 sm:h-10" />
         <AdminBar />
       </nav>
@@ -131,9 +131,7 @@ const Index = () => {
       </main>
 
       {/* Footer */}
-      <footer className="py-6 text-center text-xs text-muted-foreground">
-        Powered by AI Strategic Planner
-      </footer>
+      <footer className="py-4 mx-auto w-full max-w-6xl bg-muted/60 rounded-t-lg" />
     </div>
   );
 };
