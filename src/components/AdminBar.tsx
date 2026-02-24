@@ -60,7 +60,7 @@ const AdminBar = () => {
       variant="ghost"
       size="sm"
       onClick={signInWithGoogle}
-      className="text-xs text-navy hover:text-navy/80 hover:bg-transparent px-2 font-semibold"
+      className="text-xs text-navy hover:text-navy/80 bg-transparent hover:bg-transparent px-2 font-semibold"
     >
       Admin
     </Button>
