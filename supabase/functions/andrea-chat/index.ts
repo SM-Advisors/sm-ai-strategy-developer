@@ -11,6 +11,15 @@ const SYSTEM_PROMPT = `You are Andrea, an AI strategy intake advisor. You help c
 ## Your Role
 You guide users through an 8-section intake form that captures organizational details needed to generate a customized AI Strategic Plan. You are warm, direct, solution-focused, and honest about being AI. Keep responses concise (2-3 sentences for simple guidance, longer only when providing detailed suggestions).
 
+## Web Search Capability
+You have access to web search. Use it proactively to research companies and industries:
+- When a companyName is available in the form state, search for the company to understand their business, industry, size, recent news, and AI maturity
+- Use search results to suggest better, more specific answers to form fields
+- Search for industry-specific AI use cases to inform your recommendations
+- Reference specific facts you find ("Based on what I found about [company]...") so the user knows you've done research
+- Always use web search before proposing field edits when company name is known — your suggestions will be far more accurate
+- If the user asks about their company's competitors, AI trends in their industry, or how others handle similar challenges, search for that
+
 ## The 8 Sections
 1. Company Overview — company name, industry, employee count, departments, company description, business priorities
 2. Leadership & AI Readiness — executive sponsor, leadership attitude toward AI, prior AI experience, tech adoption comfort
@@ -28,7 +37,7 @@ You guide users through an 8-section intake form that captures organizational de
 - When you propose a field edit, include the fieldId (must match exactly), the fieldLabel, the suggestedValue, and a brief reason
 
 ## Field Edit Rules
-- Only propose edits when you have enough context (e.g., user describes their company, you can suggest filling in related fields)
+- Only propose edits when you have enough context (from conversation OR web research)
 - For radio fields, the suggestedValue MUST exactly match one of the available options
 - For checkbox fields, suggestedValue should be an array of strings that exactly match available options
 - For text/textarea fields, suggestedValue is a string
@@ -38,7 +47,7 @@ You guide users through an 8-section intake form that captures organizational de
 - Do NOT propose edits for fields that already have good values unless the user asks you to change them
 
 ## Response Format
-Always respond with valid JSON (no markdown code fences) containing exactly this structure:
+CRITICAL: After any web search activity, you MUST still respond with valid JSON (no markdown code fences) in exactly this structure:
 {
   "reply": "Your conversational message to the user",
   "suggestedPrompts": ["Up to 3 short follow-up questions or actions"],
@@ -50,23 +59,21 @@ The fieldEdits array is optional — include it only when you have specific fiel
 ## Personality — 5 Anchors
 1. DIRECT BUT WARM: You don't hedge or over-qualify. When something needs filling in, you say so kindly but clearly.
 2. INDUSTRY-SAVVY: You understand business strategy, AI implementation, and organizational dynamics. Reference real terminology.
-3. QUIETLY ENCOURAGING: Celebrate progress with specifics, not hollow praise. "Great — your compliance section is thorough" not "Good job!"
+3. QUIETLY ENCOURAGING: Celebrate progress with specifics, not hollow praise.
 4. SOLUTION-FOCUSED: Every observation comes with a concrete suggestion or field value.
-5. KNOWS SHE'S AI: You're honest about what you are. You don't pretend to have worked in the field. You explain that your suggestions are starting points that may need refinement.
+5. KNOWS SHE'S AI: You're honest about what you are. You explain that your suggestions are starting points that may need refinement.
 
 ## Important Behaviors
 - Ask only ONE question per response (never stack questions)
-- If the user seems stuck on a field, proactively suggest what they could put based on any context you have
-- If many fields are empty, gently encourage the user to fill in the current section before moving on
+- If the user seems stuck on a field, proactively suggest what they could put based on context and research
 - Reference specific field names when giving guidance
-- When the user describes their organization conversationally, look for opportunities to propose field edits that capture that information`;
+- When you find relevant information via web search, mention it briefly in your reply so the user knows you did the research`;
 
 function buildContextBlock(
   formState: Record<string, unknown>,
   currentSection: { index: number; title: string } | null,
   visibleFields: Array<{ id: string; label: string; type: string; options?: string[] }>
 ): string {
-  // Build a readable summary of filled vs empty fields
   const filledFields: string[] = [];
   const emptyFields: string[] = [];
 
@@ -94,6 +101,12 @@ ${emptyFields.length > 0 ? emptyFields.join("\n") : "All fields are filled!"}
 `;
 }
 
+/** Extract the final text content from the last API response */
+function extractFinalText(content: Array<{ type: string; text?: string }>): string {
+  const textBlocks = content.filter((c) => c.type === "text" && c.text);
+  return textBlocks[textBlocks.length - 1]?.text || "";
+}
+
 serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
@@ -111,14 +124,11 @@ serve(async (req) => {
       throw new Error("messages array is required");
     }
 
-    // Build context and inject into the last user message
     const context = buildContextBlock(formState || {}, currentSection || null, visibleFields || []);
-
-    // Cap conversation history at last 20 messages to manage token usage
     const recentMessages = messages.slice(-20);
 
-    const enhancedMessages = recentMessages.map(
-      (m: { role: string; content: string }, i: number) => {
+    let currentMessages = recentMessages.map(
+      (m: { role: string; content: unknown }, i: number) => {
         if (i === recentMessages.length - 1 && m.role === "user") {
           return {
             ...m,
@@ -129,35 +139,77 @@ serve(async (req) => {
       }
     );
 
-    const response = await fetch("https://api.anthropic.com/v1/messages", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "x-api-key": ANTHROPIC_API_KEY,
-        "anthropic-version": "2023-06-01",
-      },
-      body: JSON.stringify({
-        model: "claude-sonnet-4-6",
-        max_tokens: 2048,
-        system: SYSTEM_PROMPT,
-        messages: enhancedMessages,
-      }),
-    });
+    // Agentic loop — handles web search tool use (up to 5 iterations)
+    let rawText = "";
+    const maxIterations = 5;
 
-    if (!response.ok) {
-      const errorText = await response.text();
-      console.error("Anthropic API error:", response.status, errorText);
-      return new Response(
-        JSON.stringify({ error: `Anthropic API error: ${response.status}` }),
-        {
-          status: response.status,
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
-        }
-      );
+    for (let iteration = 0; iteration < maxIterations; iteration++) {
+      const response = await fetch("https://api.anthropic.com/v1/messages", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "x-api-key": ANTHROPIC_API_KEY,
+          "anthropic-version": "2023-06-01",
+          "anthropic-beta": "web-search-2025-03-05",
+        },
+        body: JSON.stringify({
+          model: "claude-sonnet-4-6",
+          max_tokens: 4096,
+          system: SYSTEM_PROMPT,
+          tools: [{ type: "web_search_20250305", name: "web_search" }],
+          messages: currentMessages,
+        }),
+      });
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error("Anthropic API error:", response.status, errorText);
+        return new Response(
+          JSON.stringify({ error: `Anthropic API error: ${response.status}` }),
+          {
+            status: response.status,
+            headers: { ...corsHeaders, "Content-Type": "application/json" },
+          }
+        );
+      }
+
+      const data = await response.json();
+
+      if (data.stop_reason === "end_turn") {
+        rawText = extractFinalText(data.content);
+        break;
+      }
+
+      if (data.stop_reason === "tool_use") {
+        // Append the assistant's tool-use message to the conversation
+        currentMessages = [...currentMessages, { role: "assistant", content: data.content }];
+
+        // Build tool_result messages — for web_search_20250305, Anthropic populates
+        // the search results in the tool_use block's content field
+        const toolResults = (data.content as Array<{
+          type: string;
+          id?: string;
+          content?: unknown;
+        }>)
+          .filter((c) => c.type === "tool_use")
+          .map((toolUse) => ({
+            type: "tool_result",
+            tool_use_id: toolUse.id,
+            content: toolUse.content || [],
+          }));
+
+        currentMessages = [
+          ...currentMessages,
+          { role: "user", content: toolResults },
+        ];
+
+        continue;
+      }
+
+      // Unexpected stop reason — extract whatever text we have
+      rawText = extractFinalText(data.content || []);
+      break;
     }
-
-    const data = await response.json();
-    const rawText = data.content?.[0]?.text || "";
 
     // Parse JSON from Claude's response (handle potential markdown code fences)
     let parsed;
@@ -169,15 +221,13 @@ serve(async (req) => {
         .trim();
       parsed = JSON.parse(cleaned);
     } catch {
-      // Fallback: return raw text as reply with no edits
       parsed = {
-        reply: rawText,
+        reply: rawText || "I'm here to help! What would you like to know about the assessment?",
         suggestedPrompts: [],
         fieldEdits: [],
       };
     }
 
-    // Ensure response shape
     const result = {
       reply: parsed.reply || rawText,
       suggestedPrompts: Array.isArray(parsed.suggestedPrompts)

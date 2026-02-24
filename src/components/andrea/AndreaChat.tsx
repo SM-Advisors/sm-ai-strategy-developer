@@ -10,7 +10,6 @@ import andreaCoach2Img from "@/assets/andrea-coach2.png";
 export default function AndreaChat() {
   const [isOpen, setIsOpen] = useState(false);
   const [inputValue, setInputValue] = useState("");
-  const panelRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
 
   const {
@@ -21,25 +20,6 @@ export default function AndreaChat() {
     sendMessage,
     applyFieldEdit,
   } = useAndreaChat();
-
-  // Close on click outside
-  useEffect(() => {
-    if (!isOpen) return;
-    const handleClick = (e: MouseEvent) => {
-      if (panelRef.current && !panelRef.current.contains(e.target as Node)) {
-        setIsOpen(false);
-      }
-    };
-    const handleKey = (e: KeyboardEvent) => {
-      if (e.key === "Escape") setIsOpen(false);
-    };
-    document.addEventListener("mousedown", handleClick);
-    document.addEventListener("keydown", handleKey);
-    return () => {
-      document.removeEventListener("mousedown", handleClick);
-      document.removeEventListener("keydown", handleKey);
-    };
-  }, [isOpen]);
 
   // Focus input when panel opens
   useEffect(() => {
@@ -84,10 +64,7 @@ export default function AndreaChat() {
 
   // --- Expanded chat panel ---
   return (
-    <div
-      ref={panelRef}
-      className="fixed bottom-0 right-0 z-[9999] w-full h-[85vh] sm:bottom-6 sm:right-6 sm:w-[400px] sm:h-[520px] flex flex-col rounded-none sm:rounded-xl shadow-2xl overflow-hidden border border-border"
-    >
+    <div className="fixed bottom-0 right-0 z-[9999] w-full h-[85vh] sm:bottom-6 sm:right-6 sm:w-[400px] sm:h-[520px] flex flex-col rounded-none sm:rounded-xl shadow-2xl overflow-hidden border border-border">
       {/* Header — dark navy */}
       <div className="bg-background px-4 py-3 flex items-center gap-3 shrink-0">
         <img
