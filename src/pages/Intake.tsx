@@ -9,6 +9,7 @@ import GeneratingOverlay from "@/components/intake/GeneratingOverlay";
 import { Button } from "@/components/ui/button";
 import { ArrowLeft, ArrowRight, Sparkles } from "lucide-react";
 import { useGeneratePlan } from "@/hooks/use-generate-plan";
+import AndreaChat from "@/components/andrea/AndreaChat";
 
 const TOTAL_STEPS = sections.length + 1; // sections + review
 
@@ -149,6 +150,8 @@ const Intake = () => {
           </Button>
         </div>
       </main>
+
+      <AndreaChat />
     </div>
   );
 };
