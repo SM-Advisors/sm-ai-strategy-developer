@@ -1,9 +1,32 @@
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import { ArrowRight, Shield, BarChart3, Lightbulb } from "lucide-react";
+import { ArrowRight, Shield, BarChart3, Lightbulb, ClipboardList, Brain, FileText } from "lucide-react";
+import { useEffect } from "react";
+
+const STEPS = [
+  {
+    icon: ClipboardList,
+    title: "Complete the Assessment",
+    desc: "Answer questions about your organization, goals, and readiness. Takes about 10 minutes.",
+  },
+  {
+    icon: Brain,
+    title: "AI Analyzes Your Organization",
+    desc: "Our AI synthesizes your responses into a comprehensive, personalized strategic plan.",
+  },
+  {
+    icon: FileText,
+    title: "Receive Your Strategic Plan",
+    desc: "Get a board-ready AI strategy document with roadmap, use cases, and governance framework.",
+  },
+];
 
 const Index = () => {
   const navigate = useNavigate();
+
+  useEffect(() => {
+    document.title = "AI Strategic Planner — Institutional-Grade AI Strategy";
+  }, []);
 
   return (
     <div className="min-h-screen hero-gradient flex flex-col">
@@ -15,7 +38,7 @@ const Index = () => {
       </nav>
 
       {/* Hero */}
-      <main className="flex-1 flex items-center justify-center px-6 pb-20">
+      <main className="flex-1 flex flex-col items-center justify-center px-6 pb-10">
         <div className="max-w-3xl text-center space-y-8">
           <div className="inline-block px-4 py-1.5 rounded-full border border-primary/30 bg-primary/5 text-primary text-xs font-medium tracking-wide mb-2">
             Institutional-Grade AI Strategy
@@ -46,7 +69,7 @@ const Index = () => {
           </div>
 
           {/* Feature pills */}
-          <div className="flex flex-wrap items-center justify-center gap-6 pt-8 text-muted-foreground text-sm">
+          <div className="flex flex-wrap items-center justify-center gap-6 pt-4 text-muted-foreground text-sm">
             <div className="flex items-center gap-2">
               <Shield className="w-4 h-4 text-primary" />
               <span>Enterprise Governance</span>
@@ -61,7 +84,37 @@ const Index = () => {
             </div>
           </div>
         </div>
+
+        {/* How it works */}
+        <div className="w-full max-w-4xl mt-20 sm:mt-28">
+          <h2 className="font-serif text-2xl sm:text-3xl text-center mb-12">
+            How It Works
+          </h2>
+
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-6 sm:gap-8">
+            {STEPS.map((step, i) => (
+              <div
+                key={step.title}
+                className="relative bg-secondary/50 border border-border rounded-xl p-6 text-center space-y-4"
+              >
+                <div className="mx-auto w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center">
+                  <step.icon className="w-5 h-5 text-primary" />
+                </div>
+                <div className="absolute -top-3 left-1/2 -translate-x-1/2 w-6 h-6 rounded-full bg-primary text-primary-foreground text-xs font-bold flex items-center justify-center">
+                  {i + 1}
+                </div>
+                <h3 className="font-serif text-lg text-foreground">{step.title}</h3>
+                <p className="text-xs text-muted-foreground leading-relaxed">{step.desc}</p>
+              </div>
+            ))}
+          </div>
+        </div>
       </main>
+
+      {/* Footer */}
+      <footer className="py-6 text-center text-xs text-muted-foreground">
+        Powered by AI Strategic Planner
+      </footer>
     </div>
   );
 };

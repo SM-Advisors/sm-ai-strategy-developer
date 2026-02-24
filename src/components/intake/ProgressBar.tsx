@@ -3,16 +3,21 @@ import { cn } from "@/lib/utils";
 
 interface ProgressBarProps {
   currentStep: number;
+  totalSteps?: number;
 }
 
-const ProgressBar = ({ currentStep }: ProgressBarProps) => {
-  const progress = ((currentStep + 1) / sections.length) * 100;
+const ProgressBar = ({ currentStep, totalSteps }: ProgressBarProps) => {
+  const total = totalSteps || sections.length;
+  const isReview = currentStep === sections.length;
+  const progress = isReview ? 100 : ((currentStep + 1) / total) * 100;
+  const sectionLabels = [...sections.map((s) => s.shortTitle), "Review"];
 
   return (
     <div className="w-full space-y-3">
-      {/* Overall progress bar */}
       <div className="flex items-center justify-between text-xs text-muted-foreground mb-1">
-        <span>Section {currentStep + 1} of {sections.length}</span>
+        <span>
+          {isReview ? "Review" : `Section ${currentStep + 1} of ${sections.length}`}
+        </span>
         <span>{Math.round(progress)}% complete</span>
       </div>
       <div className="w-full h-1.5 rounded-full bg-accent overflow-hidden">
@@ -22,21 +27,20 @@ const ProgressBar = ({ currentStep }: ProgressBarProps) => {
         />
       </div>
 
-      {/* Section labels */}
       <div className="hidden md:flex items-center gap-1">
-        {sections.map((section, i) => (
+        {sectionLabels.map((label, i) => (
           <div
-            key={section.shortTitle}
+            key={label}
             className={cn(
               "flex-1 text-center text-[11px] py-1.5 rounded transition-colors duration-300",
               i === currentStep
                 ? "text-primary font-semibold bg-primary/10"
-                : i < currentStep
+                : i < currentStep || isReview
                 ? "text-foreground/60"
                 : "text-muted-foreground"
             )}
           >
-            {section.shortTitle}
+            {label}
           </div>
         ))}
       </div>

@@ -16,6 +16,17 @@ const Plan = () => {
   const [activeHeading, setActiveHeading] = useState<string>("");
   const contentRef = useRef<HTMLDivElement>(null);
 
+  // Redirect if no plan
+  useEffect(() => {
+    if (!generatedPlan) {
+      navigate("/intake", { replace: true });
+    }
+  }, [generatedPlan, navigate]);
+
+  useEffect(() => {
+    document.title = `${companyName || "Organization"} — AI Strategic Plan`;
+  }, [companyName]);
+
   // Observe headings for active TOC tracking
   useEffect(() => {
     if (!contentRef.current) return;
@@ -51,117 +62,104 @@ const Plan = () => {
       .replace(/-+/g, "-");
   }, []);
 
-  if (!generatedPlan) {
-    return (
-      <div className="min-h-screen bg-background flex flex-col items-center justify-center px-6">
-        <div className="text-center space-y-4 max-w-md">
-          <h1 className="font-serif text-3xl">Your Strategic Plan</h1>
-          <p className="text-muted-foreground">
-            No plan has been generated yet. Complete the intake assessment first.
-          </p>
-          <Button variant="outline-light" onClick={() => navigate("/intake")} className="gap-2 mt-6">
-            <ArrowLeft className="w-4 h-4" />
-            Go to Assessment
-          </Button>
-        </div>
-      </div>
-    );
-  }
+  if (!generatedPlan) return null;
 
   return (
     <div className="min-h-screen bg-background">
       {/* Header */}
-      <header className="print-hidden border-b border-border px-6 py-3 sticky top-0 bg-background/95 backdrop-blur-sm z-30">
-        <div className="max-w-6xl mx-auto flex items-center justify-between gap-4">
-          <div className="flex items-center gap-4 min-w-0">
+      <header className="print-hidden border-b border-border px-4 sm:px-6 py-3 sticky top-0 bg-background/95 backdrop-blur-sm z-30">
+        <div className="max-w-6xl mx-auto flex items-center justify-between gap-2 sm:gap-4">
+          <div className="flex items-center gap-2 sm:gap-4 min-w-0">
             <button
               onClick={() => navigate("/")}
-              className="text-xs font-semibold tracking-widest uppercase text-foreground/50 hover:text-foreground transition-colors shrink-0"
+              className="text-xs font-semibold tracking-widest uppercase text-foreground/50 hover:text-foreground transition-colors shrink-0 hidden sm:block"
             >
               AI Strategic Planner
             </button>
-            <span className="text-border">|</span>
+            <span className="text-border hidden sm:block">|</span>
             <span className="text-sm font-medium text-foreground truncate">
               {companyName || "Organization"} — AI Strategic Plan
             </span>
           </div>
 
-          <div className="flex items-center gap-2 shrink-0">
+          <div className="flex items-center gap-1 sm:gap-2 shrink-0">
             <Button
               variant="ghost"
               size="sm"
               onClick={() => navigate("/intake")}
-              className="gap-1.5 text-xs"
+              className="gap-1.5 text-xs px-2 sm:px-3"
             >
               <ArrowLeft className="w-3.5 h-3.5" />
-              <span className="hidden sm:inline">Edit Assessment</span>
+              <span className="hidden sm:inline">Edit</span>
             </Button>
             <Button
               variant="ghost"
               size="sm"
               onClick={() => generate()}
-              className="gap-1.5 text-xs"
+              className="gap-1.5 text-xs px-2 sm:px-3"
             >
               <RefreshCw className="w-3.5 h-3.5" />
               <span className="hidden sm:inline">Regenerate</span>
             </Button>
 
-            <div className="h-4 w-px bg-border mx-1" />
+            <div className="h-4 w-px bg-border mx-0.5 sm:mx-1" />
 
             <Button
               variant="outline-light"
               size="sm"
               onClick={() => downloadMarkdown(generatedPlan, companyName)}
-              className="gap-1.5 text-xs"
+              className="gap-1 text-xs px-2"
+              title="Download Markdown"
             >
               <FileText className="w-3.5 h-3.5" />
-              <span className="hidden sm:inline">.md</span>
+              <span className="hidden md:inline">.md</span>
             </Button>
             <Button
               variant="outline-light"
               size="sm"
               onClick={() => downloadDocx(generatedPlan, companyName)}
-              className="gap-1.5 text-xs"
+              className="gap-1 text-xs px-2"
+              title="Download Word Document"
             >
               <FileType className="w-3.5 h-3.5" />
-              <span className="hidden sm:inline">.docx</span>
+              <span className="hidden md:inline">.docx</span>
             </Button>
             <Button
               variant="outline-light"
               size="sm"
               onClick={() => downloadPdf("plan-content", companyName)}
-              className="gap-1.5 text-xs"
+              className="gap-1 text-xs px-2"
+              title="Download PDF"
             >
               <FileDown className="w-3.5 h-3.5" />
-              <span className="hidden sm:inline">.pdf</span>
+              <span className="hidden md:inline">.pdf</span>
             </Button>
           </div>
         </div>
       </header>
 
       {/* Main layout with TOC + Content */}
-      <div className="max-w-6xl mx-auto flex gap-8 px-6 py-10">
+      <div className="max-w-6xl mx-auto flex gap-8 px-4 sm:px-6 py-6 sm:py-10">
         <PlanTocSidebar markdown={generatedPlan} activeId={activeHeading} />
 
         <main className="flex-1 min-w-0">
           <div
             id="plan-content"
             ref={contentRef}
-            className="plan-content-area bg-card rounded-xl p-6 sm:p-10 lg:p-12 card-elevated"
-            style={{ maxWidth: "800px" }}
+            className="plan-content-area bg-card rounded-xl p-5 sm:p-10 lg:p-12 card-elevated max-w-[800px]"
           >
             <article
               className="plan-article prose prose-slate max-w-none
                 prose-headings:plan-heading-serif prose-headings:text-card-foreground
-                prose-h1:text-3xl prose-h1:mb-6 prose-h1:leading-tight
-                prose-h2:text-2xl prose-h2:mt-12 prose-h2:mb-4 prose-h2:pb-3 prose-h2:border-b prose-h2:border-[hsl(var(--plan-section-divider))]
+                prose-h1:text-2xl sm:prose-h1:text-3xl prose-h1:mb-6 prose-h1:leading-tight
+                prose-h2:text-xl sm:prose-h2:text-2xl prose-h2:mt-12 prose-h2:mb-4 prose-h2:pb-3 prose-h2:border-b prose-h2:border-[hsl(var(--plan-section-divider))]
                 prose-h3:text-lg prose-h3:mt-8 prose-h3:mb-3 prose-h3:font-semibold
                 prose-p:text-card-foreground/80 prose-p:leading-relaxed prose-p:text-[15px]
                 prose-li:text-card-foreground/80 prose-li:text-[15px]
                 prose-strong:text-card-foreground
-                prose-table:text-sm prose-table:border-collapse
-                prose-th:bg-[hsl(220,15%,96%)] prose-th:text-card-foreground prose-th:p-3 prose-th:text-left prose-th:font-semibold prose-th:border prose-th:border-[hsl(var(--card-border))]
-                prose-td:p-3 prose-td:border prose-td:border-[hsl(var(--card-border))] prose-td:align-top
+                prose-table:text-sm prose-table:border-collapse prose-table:w-full prose-table:overflow-x-auto
+                prose-th:bg-[hsl(220,15%,96%)] prose-th:text-card-foreground prose-th:p-2 sm:prose-th:p-3 prose-th:text-left prose-th:font-semibold prose-th:border prose-th:border-[hsl(var(--card-border))]
+                prose-td:p-2 sm:prose-td:p-3 prose-td:border prose-td:border-[hsl(var(--card-border))] prose-td:align-top
                 prose-hr:border-[hsl(var(--plan-section-divider))]
                 prose-a:text-primary prose-a:no-underline hover:prose-a:underline
               "
@@ -170,19 +168,18 @@ const Plan = () => {
                 remarkPlugins={[remarkGfm]}
                 components={{
                   h1: ({ children, ...props }) => (
-                    <h1 id={generateHeadingId(children)} {...props}>
-                      {children}
-                    </h1>
+                    <h1 id={generateHeadingId(children)} {...props}>{children}</h1>
                   ),
                   h2: ({ children, ...props }) => (
-                    <h2 id={generateHeadingId(children)} {...props}>
-                      {children}
-                    </h2>
+                    <h2 id={generateHeadingId(children)} {...props}>{children}</h2>
                   ),
                   h3: ({ children, ...props }) => (
-                    <h3 id={generateHeadingId(children)} {...props}>
-                      {children}
-                    </h3>
+                    <h3 id={generateHeadingId(children)} {...props}>{children}</h3>
+                  ),
+                  table: ({ children, ...props }) => (
+                    <div className="overflow-x-auto -mx-2 sm:mx-0">
+                      <table {...props}>{children}</table>
+                    </div>
                   ),
                 }}
               >
@@ -191,7 +188,6 @@ const Plan = () => {
             </article>
           </div>
 
-          {/* Footer */}
           <div className="text-center py-10 text-xs text-muted-foreground">
             Powered by AI Strategic Planner
           </div>

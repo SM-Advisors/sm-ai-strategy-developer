@@ -1,25 +1,37 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useIntakeStore, IntakeFormData } from "@/stores/intake-store";
 import { sections } from "@/config/intake-sections";
 import ProgressBar from "@/components/intake/ProgressBar";
 import FormField from "@/components/intake/FormField";
+import ReviewStep from "@/components/intake/ReviewStep";
+import GeneratingOverlay from "@/components/intake/GeneratingOverlay";
 import { Button } from "@/components/ui/button";
-import { ArrowLeft, ArrowRight, Sparkles, Loader2 } from "lucide-react";
+import { ArrowLeft, ArrowRight, Sparkles } from "lucide-react";
 import { useGeneratePlan } from "@/hooks/use-generate-plan";
+
+const TOTAL_STEPS = sections.length + 1; // sections + review
 
 const Intake = () => {
   const navigate = useNavigate();
   const store = useIntakeStore();
-  const { currentStep, setCurrentStep, isGenerating, generationStatus } = store;
+  const { currentStep, setCurrentStep, isGenerating } = store;
   const [errors, setErrors] = useState<Set<string>>(new Set());
   const { generate } = useGeneratePlan();
 
-  const section = sections[currentStep];
-  const isLastStep = currentStep === sections.length - 1;
+  const isReviewStep = currentStep === sections.length;
+  const section = isReviewStep ? null : sections[currentStep];
+  const isLastFormStep = currentStep === sections.length - 1;
   const isFirstStep = currentStep === 0;
 
+  useEffect(() => {
+    document.title = isReviewStep
+      ? "Review Answers — AI Strategic Planner"
+      : `${section?.title || "Assessment"} — AI Strategic Planner`;
+  }, [currentStep, isReviewStep, section]);
+
   const visibleFields = useMemo(() => {
+    if (!section) return [];
     return section.fields.filter((field) => {
       if (!field.showIf) return true;
       const condVal = store[field.showIf.field as keyof IntakeFormData] as string;
@@ -30,6 +42,7 @@ const Intake = () => {
   }, [section, store]);
 
   const validateStep = (): boolean => {
+    if (isReviewStep) return true;
     const newErrors = new Set<string>();
     visibleFields.forEach((field) => {
       if (field.required) {
@@ -45,7 +58,7 @@ const Intake = () => {
 
   const handleNext = () => {
     if (!validateStep()) return;
-    if (isLastStep) {
+    if (isReviewStep) {
       generate();
     } else {
       setCurrentStep(currentStep + 1);
@@ -62,27 +75,13 @@ const Intake = () => {
     }
   };
 
-  // Loading overlay during generation
+  const handleEditSection = (sectionIndex: number) => {
+    setCurrentStep(sectionIndex);
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  };
+
   if (isGenerating) {
-    return (
-      <div className="min-h-screen bg-background flex flex-col items-center justify-center px-6">
-        <div className="text-center space-y-8 max-w-md animate-fade-in">
-          <div className="relative mx-auto w-16 h-16">
-            <Loader2 className="w-16 h-16 text-primary animate-spin" />
-          </div>
-          <h2 className="font-serif text-2xl">Generating Your Plan</h2>
-          <p className="text-muted-foreground text-sm animate-pulse">
-            {generationStatus}
-          </p>
-          <div className="w-64 mx-auto h-1 rounded-full bg-accent overflow-hidden">
-            <div className="h-full bg-primary rounded-full animate-pulse" style={{ width: "60%" }} />
-          </div>
-          <p className="text-xs text-muted-foreground">
-            This typically takes 30-60 seconds
-          </p>
-        </div>
-      </div>
-    );
+    return <GeneratingOverlay />;
   }
 
   return (
@@ -100,19 +99,24 @@ const Intake = () => {
       </header>
 
       <main className="max-w-3xl mx-auto px-6 py-8 space-y-8">
-        <ProgressBar currentStep={currentStep} />
+        <ProgressBar currentStep={currentStep} totalSteps={TOTAL_STEPS} />
 
         <div className="bg-card rounded-xl p-6 sm:p-8 card-elevated animate-fade-in" key={currentStep}>
-          <h2 className="font-serif text-2xl text-card-foreground mb-1">{section.title}</h2>
-          <p className="text-sm text-muted-foreground mb-8">
-            Section {currentStep + 1} of {sections.length}
-          </p>
-
-          <div className="space-y-6">
-            {section.fields.map((field) => (
-              <FormField key={field.id} field={field} error={errors.has(field.id)} />
-            ))}
-          </div>
+          {isReviewStep ? (
+            <ReviewStep onEditSection={handleEditSection} />
+          ) : (
+            <>
+              <h2 className="font-serif text-2xl text-card-foreground mb-1">{section!.title}</h2>
+              <p className="text-sm text-muted-foreground mb-8">
+                Section {currentStep + 1} of {sections.length}
+              </p>
+              <div className="space-y-6">
+                {section!.fields.map((field) => (
+                  <FormField key={field.id} field={field} error={errors.has(field.id)} />
+                ))}
+              </div>
+            </>
+          )}
         </div>
 
         <div className="flex items-center justify-between pb-12">
@@ -121,11 +125,20 @@ const Intake = () => {
             Back
           </Button>
 
-          <Button variant={isLastStep ? "hero" : "default"} onClick={handleNext} className="gap-2">
-            {isLastStep ? (
+          <Button
+            variant={isReviewStep ? "hero" : "default"}
+            onClick={handleNext}
+            className="gap-2"
+          >
+            {isReviewStep ? (
               <>
                 <Sparkles className="w-4 h-4" />
                 Generate My AI Strategic Plan
+              </>
+            ) : isLastFormStep ? (
+              <>
+                Review Answers
+                <ArrowRight className="w-4 h-4" />
               </>
             ) : (
               <>
