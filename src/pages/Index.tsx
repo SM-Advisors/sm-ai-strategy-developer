@@ -47,7 +47,7 @@ const Index = () => {
       </nav>
 
       {/* Hero */}
-      <main className="flex-1 flex flex-col items-center justify-center px-6 pb-10">
+      <main className="flex-1 flex flex-col items-center justify-center px-6 pb-10 pt-8">
         <div className="max-w-3xl text-center space-y-5">
           <h1 className="text-4xl sm:text-5xl lg:text-6xl font-serif leading-tight tracking-tight">
             AI Strategic Planner
