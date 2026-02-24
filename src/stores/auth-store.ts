@@ -1,6 +1,7 @@
 import { create } from "zustand";
 import type { User } from "@supabase/supabase-js";
 import { supabase } from "@/integrations/supabase/client";
+import { lovable } from "@/integrations/lovable/index";
 
 const ADMIN_EMAIL = "coryk@smaiadvisors.com";
 const ACCESS_CODE_KEY = "sm-access-code";
@@ -35,11 +36,8 @@ export const useAuthStore = create<AuthState>((set, get) => ({
   },
 
   signInWithGoogle: async () => {
-    await supabase.auth.signInWithOAuth({
-      provider: "google",
-      options: {
-        redirectTo: window.location.origin,
-      },
+    await lovable.auth.signInWithOAuth("google", {
+      redirect_uri: window.location.origin,
     });
   },
 

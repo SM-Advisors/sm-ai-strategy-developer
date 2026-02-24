@@ -59,7 +59,7 @@ const Admin = () => {
   const { data: codes = [], isLoading } = useQuery<AccessCode[]>({
     queryKey: ["access-codes"],
     queryFn: async () => {
-      const { data, error } = await supabase
+      const { data, error } = await (supabase as any)
         .from("access_codes")
         .select("*")
         .order("created_at", { ascending: false });
@@ -73,7 +73,7 @@ const Admin = () => {
   const generateMutation = useMutation({
     mutationFn: async (label: string) => {
       const code = generateCode();
-      const { data, error } = await supabase
+      const { data, error } = await (supabase as any)
         .from("access_codes")
         .insert({ code, label: label.trim() || null })
         .select()
@@ -95,7 +95,7 @@ const Admin = () => {
   // Toggle active status mutation
   const toggleMutation = useMutation({
     mutationFn: async ({ id, is_active }: { id: string; is_active: boolean }) => {
-      const { error } = await supabase
+      const { error } = await (supabase as any)
         .from("access_codes")
         .update({ is_active: !is_active })
         .eq("id", id);
