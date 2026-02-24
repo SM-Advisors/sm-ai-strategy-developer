@@ -57,10 +57,10 @@ const AdminBar = () => {
 
   return (
     <Button
-      variant="ghost"
+      variant="outline"
       size="sm"
       onClick={signInWithGoogle}
-      className="text-xs text-navy hover:text-navy/80 bg-transparent hover:bg-transparent px-2 font-semibold"
+      className="text-xs text-navy hover:text-navy/80 bg-background hover:bg-background border-navy/40 hover:border-navy/60 px-3 font-semibold"
     >
       Admin
     </Button>
