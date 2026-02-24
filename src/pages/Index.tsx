@@ -5,6 +5,7 @@ import { useEffect } from "react";
 import AdminBar from "@/components/AdminBar";
 import AccessCodeEntry from "@/components/AccessCodeEntry";
 import { useAuthStore } from "@/stores/auth-store";
+import smLogo from "@/assets/sm-advisors-logo.png";
 
 const STEPS = [
   {
@@ -39,9 +40,7 @@ const Index = () => {
     <div className="min-h-screen hero-gradient flex flex-col">
       {/* Nav */}
       <nav className="w-full px-6 py-5 flex items-center justify-between max-w-6xl mx-auto">
-        <span className="text-sm font-semibold tracking-widest uppercase text-foreground/70">
-          AI Strategic Planner
-        </span>
+        <img src={smLogo} alt="SM Advisors" className="h-8 sm:h-10" />
         <AdminBar />
       </nav>
 
