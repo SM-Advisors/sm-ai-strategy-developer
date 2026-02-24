@@ -56,14 +56,12 @@ const AdminBar = () => {
   }
 
   return (
-    <Button
-      variant="outline"
-      size="sm"
+    <button
       onClick={signInWithGoogle}
-      className="text-xs text-navy hover:text-navy/80 bg-background hover:bg-background border-navy/40 hover:border-navy/60 px-3 font-semibold"
+      className="text-xs text-navy hover:text-navy/80 font-semibold transition-colors"
     >
       Admin
-    </Button>
+    </button>
   );
 };
 
