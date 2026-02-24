@@ -7,7 +7,7 @@ import FormField from "@/components/intake/FormField";
 import ReviewStep from "@/components/intake/ReviewStep";
 import GeneratingOverlay from "@/components/intake/GeneratingOverlay";
 import { Button } from "@/components/ui/button";
-import { ArrowLeft, ArrowRight, Sparkles } from "lucide-react";
+import { ArrowLeft, ArrowRight, Sparkles, FileText } from "lucide-react";
 import { useGeneratePlan } from "@/hooks/use-generate-plan";
 import AndreaChat from "@/components/andrea/AndreaChat";
 
@@ -16,7 +16,7 @@ const TOTAL_STEPS = sections.length + 1; // sections + review
 const Intake = () => {
   const navigate = useNavigate();
   const store = useIntakeStore();
-  const { currentStep, setCurrentStep, isGenerating } = store;
+  const { currentStep, setCurrentStep, isGenerating, generatedPlan } = store;
   const [errors, setErrors] = useState<Set<string>>(new Set());
   const { generate } = useGeneratePlan();
 
@@ -95,7 +95,20 @@ const Intake = () => {
           >
             AI Strategic Planner
           </button>
-          <span className="text-xs text-muted-foreground">Intake Assessment</span>
+          <div className="flex items-center gap-3">
+            {generatedPlan && (
+              <Button
+                variant="outline-light"
+                size="sm"
+                onClick={() => navigate("/plan")}
+                className="gap-1.5 text-xs"
+              >
+                <FileText className="w-3.5 h-3.5" />
+                View Plan
+              </Button>
+            )}
+            <span className="text-xs text-muted-foreground">Intake Assessment</span>
+          </div>
         </div>
       </header>
 

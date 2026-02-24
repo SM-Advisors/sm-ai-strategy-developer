@@ -52,6 +52,7 @@ export interface IntakeFormData {
 interface IntakeStore extends IntakeFormData {
   currentStep: number;
   generatedPlan: string;
+  planGeneratedAt: string;
   isGenerating: boolean;
   generationStatus: string;
   setCurrentStep: (step: number) => void;
@@ -87,6 +88,7 @@ export const useIntakeStore = create<IntakeStore>()(
       ...initialData,
       currentStep: 0,
       generatedPlan: "",
+      planGeneratedAt: "",
       isGenerating: false,
       generationStatus: "",
       setCurrentStep: (step) => set({ currentStep: step }),
@@ -100,8 +102,11 @@ export const useIntakeStore = create<IntakeStore>()(
           if (max && arr.length >= max) return state;
           return { [field]: [...arr, value] };
         }),
-      setGeneratedPlan: (plan) => set({ generatedPlan: plan }),
-      appendToPlan: (chunk) => set((state) => ({ generatedPlan: state.generatedPlan + chunk })),
+      setGeneratedPlan: (plan) => set({ generatedPlan: plan, planGeneratedAt: plan ? new Date().toISOString() : "" }),
+      appendToPlan: (chunk) => set((state) => ({
+        generatedPlan: state.generatedPlan + chunk,
+        planGeneratedAt: state.planGeneratedAt || new Date().toISOString(),
+      })),
       setIsGenerating: (val) => set({ isGenerating: val }),
       setGenerationStatus: (status) => set({ generationStatus: status }),
       getFormData: () => {
