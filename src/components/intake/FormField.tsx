@@ -15,6 +15,7 @@ const FormField = ({ field, error }: FormFieldProps) => {
   const value = store[field.id as keyof IntakeFormData];
 
   // Check showIf condition
+  const isConditional = !!field.showIf;
   if (field.showIf) {
     const conditionValue = store[field.showIf.field as keyof IntakeFormData] as string;
     if (field.showIf.condition === "notEqual" && conditionValue === field.showIf.value) return null;
@@ -27,7 +28,10 @@ const FormField = ({ field, error }: FormFieldProps) => {
   };
 
   return (
-    <div className="space-y-2.5 animate-fade-in">
+    <div className={cn(
+      "space-y-2.5",
+      isConditional ? "animate-slide-down overflow-hidden" : "animate-fade-in"
+    )}>
       <Label className="text-sm font-medium text-card-foreground leading-relaxed">
         {field.label}
         {field.required && <span className="text-destructive ml-1">*</span>}
@@ -68,6 +72,7 @@ const FormField = ({ field, error }: FormFieldProps) => {
           {field.options?.map((option) => (
             <label
               key={option}
+              onClick={() => handleChange(option)}
               className={cn(
                 "flex items-center gap-3 p-3 rounded-lg border cursor-pointer transition-all duration-200",
                 value === option
@@ -96,6 +101,11 @@ const FormField = ({ field, error }: FormFieldProps) => {
             return (
               <label
                 key={option}
+                onClick={(e) => {
+                  e.preventDefault();
+                  if (disabled) return;
+                  store.toggleArrayField(field.id as keyof IntakeFormData, option, field.maxSelect);
+                }}
                 className={cn(
                   "flex items-center gap-3 p-3 rounded-lg border cursor-pointer transition-all duration-200",
                   checked
