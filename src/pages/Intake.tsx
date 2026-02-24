@@ -5,13 +5,15 @@ import { sections } from "@/config/intake-sections";
 import ProgressBar from "@/components/intake/ProgressBar";
 import FormField from "@/components/intake/FormField";
 import { Button } from "@/components/ui/button";
-import { ArrowLeft, ArrowRight, Sparkles } from "lucide-react";
+import { ArrowLeft, ArrowRight, Sparkles, Loader2 } from "lucide-react";
+import { useGeneratePlan } from "@/hooks/use-generate-plan";
 
 const Intake = () => {
   const navigate = useNavigate();
   const store = useIntakeStore();
-  const { currentStep, setCurrentStep } = store;
+  const { currentStep, setCurrentStep, isGenerating, generationStatus } = store;
   const [errors, setErrors] = useState<Set<string>>(new Set());
+  const { generate } = useGeneratePlan();
 
   const section = sections[currentStep];
   const isLastStep = currentStep === sections.length - 1;
@@ -44,7 +46,7 @@ const Intake = () => {
   const handleNext = () => {
     if (!validateStep()) return;
     if (isLastStep) {
-      navigate("/plan");
+      generate();
     } else {
       setCurrentStep(currentStep + 1);
       setErrors(new Set());
@@ -60,9 +62,31 @@ const Intake = () => {
     }
   };
 
+  // Loading overlay during generation
+  if (isGenerating) {
+    return (
+      <div className="min-h-screen bg-background flex flex-col items-center justify-center px-6">
+        <div className="text-center space-y-8 max-w-md animate-fade-in">
+          <div className="relative mx-auto w-16 h-16">
+            <Loader2 className="w-16 h-16 text-primary animate-spin" />
+          </div>
+          <h2 className="font-serif text-2xl">Generating Your Plan</h2>
+          <p className="text-muted-foreground text-sm animate-pulse">
+            {generationStatus}
+          </p>
+          <div className="w-64 mx-auto h-1 rounded-full bg-accent overflow-hidden">
+            <div className="h-full bg-primary rounded-full animate-pulse" style={{ width: "60%" }} />
+          </div>
+          <p className="text-xs text-muted-foreground">
+            This typically takes 30-60 seconds
+          </p>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen bg-background">
-      {/* Header */}
       <header className="border-b border-border px-6 py-4">
         <div className="max-w-3xl mx-auto flex items-center justify-between">
           <button
@@ -78,7 +102,6 @@ const Intake = () => {
       <main className="max-w-3xl mx-auto px-6 py-8 space-y-8">
         <ProgressBar currentStep={currentStep} />
 
-        {/* Section Card */}
         <div className="bg-card rounded-xl p-6 sm:p-8 card-elevated animate-fade-in" key={currentStep}>
           <h2 className="font-serif text-2xl text-card-foreground mb-1">{section.title}</h2>
           <p className="text-sm text-muted-foreground mb-8">
@@ -87,32 +110,18 @@ const Intake = () => {
 
           <div className="space-y-6">
             {section.fields.map((field) => (
-              <FormField
-                key={field.id}
-                field={field}
-                error={errors.has(field.id)}
-              />
+              <FormField key={field.id} field={field} error={errors.has(field.id)} />
             ))}
           </div>
         </div>
 
-        {/* Navigation */}
         <div className="flex items-center justify-between pb-12">
-          <Button
-            variant="outline-light"
-            onClick={handleBack}
-            disabled={isFirstStep}
-            className="gap-2"
-          >
+          <Button variant="outline-light" onClick={handleBack} disabled={isFirstStep} className="gap-2">
             <ArrowLeft className="w-4 h-4" />
             Back
           </Button>
 
-          <Button
-            variant={isLastStep ? "hero" : "default"}
-            onClick={handleNext}
-            className="gap-2"
-          >
+          <Button variant={isLastStep ? "hero" : "default"} onClick={handleNext} className="gap-2">
             {isLastStep ? (
               <>
                 <Sparkles className="w-4 h-4" />
