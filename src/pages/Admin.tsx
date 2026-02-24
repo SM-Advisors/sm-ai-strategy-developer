@@ -1,0 +1,316 @@
+import { useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import {
+  Copy,
+  Check,
+  PlusCircle,
+  ToggleLeft,
+  ToggleRight,
+  ArrowLeft,
+  Loader2,
+  KeyRound,
+} from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Badge } from "@/components/ui/badge";
+import { supabase } from "@/integrations/supabase/client";
+import { useAuthStore } from "@/stores/auth-store";
+import { toast } from "sonner";
+import { format } from "date-fns";
+
+interface AccessCode {
+  id: string;
+  code: string;
+  label: string | null;
+  is_active: boolean;
+  use_count: number;
+  created_at: string;
+}
+
+// Generate a code in SM-XXXX-XXXX format
+function generateCode(): string {
+  const chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
+  const segment = () =>
+    Array.from({ length: 4 }, () => chars[Math.floor(Math.random() * chars.length)]).join("");
+  return `SM-${segment()}-${segment()}`;
+}
+
+const Admin = () => {
+  const navigate = useNavigate();
+  const queryClient = useQueryClient();
+  const { isAdmin, adminUser } = useAuthStore();
+  const [labelInput, setLabelInput] = useState("");
+  const [newCode, setNewCode] = useState<string | null>(null);
+  const [copiedId, setCopiedId] = useState<string | null>(null);
+
+  useEffect(() => {
+    document.title = "Admin Panel — AI Strategic Planner";
+  }, []);
+
+  // Redirect non-admins
+  useEffect(() => {
+    if (!isAdmin) {
+      navigate("/");
+    }
+  }, [isAdmin, navigate]);
+
+  // Fetch all access codes
+  const { data: codes = [], isLoading } = useQuery<AccessCode[]>({
+    queryKey: ["access-codes"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("access_codes")
+        .select("*")
+        .order("created_at", { ascending: false });
+      if (error) throw error;
+      return data as AccessCode[];
+    },
+    enabled: isAdmin,
+  });
+
+  // Generate new code mutation
+  const generateMutation = useMutation({
+    mutationFn: async (label: string) => {
+      const code = generateCode();
+      const { data, error } = await supabase
+        .from("access_codes")
+        .insert({ code, label: label.trim() || null })
+        .select()
+        .single();
+      if (error) throw error;
+      return data as AccessCode;
+    },
+    onSuccess: (data) => {
+      setNewCode(data.code);
+      setLabelInput("");
+      queryClient.invalidateQueries({ queryKey: ["access-codes"] });
+      toast.success("Access code generated");
+    },
+    onError: () => {
+      toast.error("Failed to generate code. Please try again.");
+    },
+  });
+
+  // Toggle active status mutation
+  const toggleMutation = useMutation({
+    mutationFn: async ({ id, is_active }: { id: string; is_active: boolean }) => {
+      const { error } = await supabase
+        .from("access_codes")
+        .update({ is_active: !is_active })
+        .eq("id", id);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["access-codes"] });
+    },
+    onError: () => {
+      toast.error("Failed to update code status.");
+    },
+  });
+
+  const copyToClipboard = async (text: string, id: string) => {
+    await navigator.clipboard.writeText(text);
+    setCopiedId(id);
+    toast.success("Code copied to clipboard");
+    setTimeout(() => setCopiedId(null), 2000);
+  };
+
+  if (!isAdmin) {
+    return null;
+  }
+
+  return (
+    <div className="min-h-screen hero-gradient">
+      {/* Header */}
+      <header className="border-b border-border/50 bg-background/60 backdrop-blur-sm sticky top-0 z-10">
+        <div className="max-w-5xl mx-auto px-6 py-4 flex items-center justify-between">
+          <div className="flex items-center gap-4">
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => navigate("/")}
+              className="text-foreground/60 hover:text-foreground gap-1.5"
+            >
+              <ArrowLeft className="w-4 h-4" />
+              Back
+            </Button>
+            <div className="h-4 w-px bg-border" />
+            <div>
+              <h1 className="text-sm font-semibold tracking-wide">Admin Panel</h1>
+              <p className="text-xs text-muted-foreground">{adminUser?.email}</p>
+            </div>
+          </div>
+          <div className="flex items-center gap-2">
+            <KeyRound className="w-4 h-4 text-primary" />
+            <span className="text-xs text-muted-foreground font-medium">
+              {codes.filter((c) => c.is_active).length} active code{codes.filter((c) => c.is_active).length !== 1 ? "s" : ""}
+            </span>
+          </div>
+        </div>
+      </header>
+
+      <main className="max-w-5xl mx-auto px-6 py-10 space-y-10">
+        {/* Generate New Code */}
+        <section className="bg-secondary/40 border border-border rounded-xl p-6 space-y-5">
+          <div>
+            <h2 className="font-serif text-xl text-foreground mb-1">Generate Access Code</h2>
+            <p className="text-sm text-muted-foreground">
+              Create a reusable code to share with a client. Codes are active until you deactivate them.
+            </p>
+          </div>
+
+          <div className="flex flex-col sm:flex-row gap-3">
+            <Input
+              value={labelInput}
+              onChange={(e) => setLabelInput(e.target.value)}
+              placeholder="Label (optional) — e.g. Acme Corp, Q1 Pilot"
+              className="flex-1 text-sm"
+              disabled={generateMutation.isPending}
+              onKeyDown={(e) => {
+                if (e.key === "Enter") generateMutation.mutate(labelInput);
+              }}
+            />
+            <Button
+              onClick={() => generateMutation.mutate(labelInput)}
+              disabled={generateMutation.isPending}
+              className="shrink-0"
+            >
+              {generateMutation.isPending ? (
+                <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+              ) : (
+                <PlusCircle className="w-4 h-4 mr-2" />
+              )}
+              Generate Code
+            </Button>
+          </div>
+
+          {/* Newly generated code display */}
+          {newCode && (
+            <div className="flex items-center justify-between bg-primary/10 border border-primary/30 rounded-lg px-4 py-3">
+              <div>
+                <p className="text-xs text-muted-foreground mb-0.5">New access code</p>
+                <p className="font-mono text-lg font-bold tracking-widest text-primary">{newCode}</p>
+              </div>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => copyToClipboard(newCode, "new")}
+                className="shrink-0 border-primary/30 hover:border-primary/60"
+              >
+                {copiedId === "new" ? (
+                  <Check className="w-4 h-4 text-green-500" />
+                ) : (
+                  <Copy className="w-4 h-4" />
+                )}
+              </Button>
+            </div>
+          )}
+        </section>
+
+        {/* Codes Table */}
+        <section className="space-y-4">
+          <div className="flex items-center justify-between">
+            <h2 className="font-serif text-xl text-foreground">All Access Codes</h2>
+            <span className="text-xs text-muted-foreground">{codes.length} total</span>
+          </div>
+
+          {isLoading ? (
+            <div className="flex items-center justify-center py-16 text-muted-foreground gap-2">
+              <Loader2 className="w-5 h-5 animate-spin" />
+              <span className="text-sm">Loading codes...</span>
+            </div>
+          ) : codes.length === 0 ? (
+            <div className="text-center py-16 text-muted-foreground">
+              <KeyRound className="w-8 h-8 mx-auto mb-3 opacity-30" />
+              <p className="text-sm">No access codes yet. Generate your first one above.</p>
+            </div>
+          ) : (
+            <div className="border border-border rounded-xl overflow-hidden">
+              {/* Table header */}
+              <div className="grid grid-cols-[1fr_1fr_4rem_5rem_5rem_6rem] gap-4 px-5 py-3 bg-secondary/60 border-b border-border text-xs font-medium text-muted-foreground uppercase tracking-wider">
+                <span>Code</span>
+                <span>Label</span>
+                <span className="text-center">Uses</span>
+                <span className="text-center">Status</span>
+                <span className="text-center">Created</span>
+                <span className="text-center">Actions</span>
+              </div>
+
+              {/* Rows */}
+              {codes.map((c) => (
+                <div
+                  key={c.id}
+                  className="grid grid-cols-[1fr_1fr_4rem_5rem_5rem_6rem] gap-4 px-5 py-4 border-b border-border/50 last:border-0 items-center hover:bg-secondary/20 transition-colors"
+                >
+                  {/* Code */}
+                  <span className="font-mono text-sm font-semibold tracking-widest text-foreground">
+                    {c.code}
+                  </span>
+
+                  {/* Label */}
+                  <span className="text-sm text-muted-foreground truncate">
+                    {c.label ?? <span className="italic opacity-40">—</span>}
+                  </span>
+
+                  {/* Use count */}
+                  <span className="text-sm text-center text-muted-foreground">
+                    {c.use_count}
+                  </span>
+
+                  {/* Status */}
+                  <div className="flex justify-center">
+                    <Badge
+                      variant={c.is_active ? "default" : "secondary"}
+                      className={c.is_active ? "bg-green-500/20 text-green-400 border-green-500/30 hover:bg-green-500/20" : ""}
+                    >
+                      {c.is_active ? "Active" : "Inactive"}
+                    </Badge>
+                  </div>
+
+                  {/* Created date */}
+                  <span className="text-xs text-center text-muted-foreground">
+                    {format(new Date(c.created_at), "MMM d")}
+                  </span>
+
+                  {/* Actions */}
+                  <div className="flex items-center justify-center gap-1.5">
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="w-7 h-7 text-muted-foreground hover:text-foreground"
+                      title="Copy code"
+                      onClick={() => copyToClipboard(c.code, c.id)}
+                    >
+                      {copiedId === c.id ? (
+                        <Check className="w-3.5 h-3.5 text-green-500" />
+                      ) : (
+                        <Copy className="w-3.5 h-3.5" />
+                      )}
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="w-7 h-7 text-muted-foreground hover:text-foreground"
+                      title={c.is_active ? "Deactivate" : "Activate"}
+                      disabled={toggleMutation.isPending}
+                      onClick={() => toggleMutation.mutate({ id: c.id, is_active: c.is_active })}
+                    >
+                      {c.is_active ? (
+                        <ToggleRight className="w-4 h-4 text-green-500" />
+                      ) : (
+                        <ToggleLeft className="w-4 h-4" />
+                      )}
+                    </Button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </section>
+      </main>
+    </div>
+  );
+};
+
+export default Admin;

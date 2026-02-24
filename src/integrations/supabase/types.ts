@@ -14,7 +14,33 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      access_codes: {
+        Row: {
+          id: string
+          code: string
+          label: string | null
+          is_active: boolean
+          use_count: number
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          code: string
+          label?: string | null
+          is_active?: boolean
+          use_count?: number
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          code?: string
+          label?: string | null
+          is_active?: boolean
+          use_count?: number
+          created_at?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never

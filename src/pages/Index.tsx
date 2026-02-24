@@ -1,7 +1,10 @@
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { ArrowRight, Shield, BarChart3, Lightbulb, ClipboardList, Brain, FileText } from "lucide-react";
 import { useEffect } from "react";
+import AdminBar from "@/components/AdminBar";
+import AccessCodeEntry from "@/components/AccessCodeEntry";
+import { useAuthStore } from "@/stores/auth-store";
 
 const STEPS = [
   {
@@ -23,6 +26,10 @@ const STEPS = [
 
 const Index = () => {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const { hasAccess } = useAuthStore();
+
+  const redirected = searchParams.get("redirect") === "true";
 
   useEffect(() => {
     document.title = "AI Strategic Planner — Institutional-Grade AI Strategy";
@@ -35,6 +42,7 @@ const Index = () => {
         <span className="text-sm font-semibold tracking-widest uppercase text-foreground/70">
           AI Strategic Planner
         </span>
+        <AdminBar />
       </nav>
 
       {/* Hero */}
@@ -56,16 +64,28 @@ const Index = () => {
             Complete the intake assessment below. Your responses will be analyzed by AI to produce a customized strategic plan built for your CEO, C-suite, and Board.
           </p>
 
+          {/* CTA — conditional on access */}
           <div className="pt-4">
-            <Button
-              variant="hero"
-              size="lg"
-              onClick={() => navigate("/intake")}
-              className="text-base px-10 py-6 rounded-lg"
-            >
-              Begin Assessment
-              <ArrowRight className="ml-2 w-5 h-5" />
-            </Button>
+            {hasAccess ? (
+              <Button
+                variant="hero"
+                size="lg"
+                onClick={() => navigate("/intake")}
+                className="text-base px-10 py-6 rounded-lg"
+              >
+                Begin Assessment
+                <ArrowRight className="ml-2 w-5 h-5" />
+              </Button>
+            ) : (
+              <div className="space-y-3">
+                {redirected && (
+                  <p className="text-xs text-muted-foreground">
+                    An access code is required to use this platform.
+                  </p>
+                )}
+                <AccessCodeEntry />
+              </div>
+            )}
           </div>
 
           {/* Feature pills */}
