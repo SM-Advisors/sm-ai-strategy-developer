@@ -50,14 +50,14 @@ function parseMarkdownToDocxElements(
   elements.push(new Paragraph({ spacing: { after: 4000 } }));
   elements.push(
     new Paragraph({
-      children: [new TextRun({ text: companyName || "Organization", size: 56, bold: true, font: "Georgia" })],
+      children: [new TextRun({ text: companyName || "Organization", size: 56, bold: true, font: "Arial" })],
       alignment: AlignmentType.CENTER,
       spacing: { after: 400 },
     })
   );
   elements.push(
     new Paragraph({
-      children: [new TextRun({ text: "AI Strategic Plan", size: 40, font: "Georgia", color: "B8860B" })],
+      children: [new TextRun({ text: "AI Strategic Plan", size: 40, font: "Arial", color: "B8860B" })],
       alignment: AlignmentType.CENTER,
       spacing: { after: 600 },
     })
@@ -168,7 +168,7 @@ function parseMarkdownToDocxElements(
     if (h1) {
       elements.push(
         new Paragraph({
-          children: [new TextRun({ text: h1[1].replace(/\*\*/g, ""), size: 36, bold: true, font: "Georgia" })],
+          children: [new TextRun({ text: h1[1].replace(/\*\*/g, ""), size: 36, bold: true, font: "Arial" })],
           heading: HeadingLevel.HEADING_1,
           spacing: { before: 400, after: 200 },
           pageBreakBefore: elements.length > 8,
@@ -177,7 +177,7 @@ function parseMarkdownToDocxElements(
     } else if (h2) {
       elements.push(
         new Paragraph({
-          children: [new TextRun({ text: h2[1].replace(/\*\*/g, ""), size: 30, bold: true, font: "Georgia" })],
+          children: [new TextRun({ text: h2[1].replace(/\*\*/g, ""), size: 30, bold: true, font: "Arial" })],
           heading: HeadingLevel.HEADING_2,
           spacing: { before: 300, after: 150 },
         })
@@ -185,7 +185,7 @@ function parseMarkdownToDocxElements(
     } else if (h3) {
       elements.push(
         new Paragraph({
-          children: [new TextRun({ text: h3[1].replace(/\*\*/g, ""), size: 26, bold: true, font: "Georgia" })],
+          children: [new TextRun({ text: h3[1].replace(/\*\*/g, ""), size: 26, bold: true, font: "Arial" })],
           heading: HeadingLevel.HEADING_3,
           spacing: { before: 200, after: 100 },
         })

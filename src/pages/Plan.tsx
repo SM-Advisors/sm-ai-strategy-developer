@@ -149,7 +149,7 @@ const Plan = () => {
             className="plan-content-area bg-card rounded-xl p-5 sm:p-10 lg:p-12 card-elevated max-w-[800px]"
           >
             <article
-              className="plan-article prose max-w-none text-gray-900
+              className="plan-article prose max-w-none text-gray-900 font-[Arial,Helvetica,sans-serif]
                 prose-headings:plan-heading-serif prose-headings:!text-gray-900
                 prose-h1:text-2xl sm:prose-h1:text-3xl prose-h1:mb-6 prose-h1:leading-tight
                 prose-h2:text-xl sm:prose-h2:text-2xl prose-h2:mt-12 prose-h2:mb-4 prose-h2:pb-3 prose-h2:border-b prose-h2:border-[hsl(var(--plan-section-divider))]
