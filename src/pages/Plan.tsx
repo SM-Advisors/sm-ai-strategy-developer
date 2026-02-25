@@ -2,12 +2,13 @@ import { useNavigate } from "react-router-dom";
 import { useIntakeStore } from "@/stores/intake-store";
 import { useGeneratePlan } from "@/hooks/use-generate-plan";
 import { Button } from "@/components/ui/button";
-import { ArrowLeft, FileText, FileDown, FileType, RefreshCw } from "lucide-react";
+import { ArrowLeft, FileText, FileDown, FileType, RefreshCw, FlaskConical } from "lucide-react";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import PlanTocSidebar from "@/components/plan/PlanTocSidebar";
 import { downloadMarkdown, downloadDocx, downloadPdf } from "@/lib/export-plan";
 import { useCallback, useEffect, useRef, useState } from "react";
+import AndreaPlanReview from "@/components/andrea/AndreaPlanReview";
 
 const Plan = () => {
   const navigate = useNavigate();
@@ -102,6 +103,16 @@ const Plan = () => {
               <span className="hidden sm:inline">Regenerate</span>
             </Button>
 
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => navigate("/scenario")}
+              className="gap-1.5 text-xs px-2 sm:px-3"
+            >
+              <FlaskConical className="w-3.5 h-3.5" />
+              <span className="hidden sm:inline">Scenario</span>
+            </Button>
+
             <div className="h-4 w-px bg-border mx-0.5 sm:mx-1" />
 
             <Button
@@ -193,6 +204,8 @@ const Plan = () => {
           </div>
         </main>
       </div>
+
+      <AndreaPlanReview />
     </div>
   );
 };

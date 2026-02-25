@@ -7,6 +7,7 @@ import { useEffect } from "react";
 import Index from "./pages/Index";
 import Intake from "./pages/Intake";
 import Plan from "./pages/Plan";
+import Scenario from "./pages/Scenario";
 import Admin from "./pages/Admin";
 import NotFound from "./pages/NotFound";
 import ProtectedRoute from "./components/ProtectedRoute";
@@ -49,6 +50,7 @@ const App = () => (
             <Route path="/" element={<Index />} />
             <Route path="/intake" element={<ProtectedRoute><Intake /></ProtectedRoute>} />
             <Route path="/plan" element={<ProtectedRoute><Plan /></ProtectedRoute>} />
+            <Route path="/scenario" element={<ProtectedRoute><Scenario /></ProtectedRoute>} />
             <Route path="/admin" element={<Admin />} />
             <Route path="*" element={<NotFound />} />
           </Routes>
