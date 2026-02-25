@@ -1,11 +1,10 @@
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import { ArrowRight, Shield, BarChart3, Lightbulb, ClipboardList, Brain, FileText, Sparkles } from "lucide-react";
+import { ArrowRight, Shield, BarChart3, Lightbulb, ClipboardList, Brain, FileText } from "lucide-react";
 import { useEffect } from "react";
 import AdminBar from "@/components/AdminBar";
 import AccessCodeEntry from "@/components/AccessCodeEntry";
 import { useAuthStore } from "@/stores/auth-store";
-import { useIntakeStore } from "@/stores/intake-store";
 import smLogo from "@/assets/sm-advisors-logo.png";
 
 const STEPS = [
@@ -30,17 +29,8 @@ const Index = () => {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const { hasAccess } = useAuthStore();
-  const { generatedPlan, planGeneratedAt, companyName } = useIntakeStore();
 
   const redirected = searchParams.get("redirect") === "true";
-
-  const planDate = planGeneratedAt
-    ? new Date(planGeneratedAt).toLocaleDateString("en-US", {
-        month: "long",
-        day: "numeric",
-        year: "numeric",
-      })
-    : null;
 
   useEffect(() => {
     document.title = "AI Strategic Planner — Institutional-Grade AI Strategy";
@@ -71,60 +61,18 @@ const Index = () => {
             Complete the intake assessment below. Your responses will be analyzed by AI to produce a customized strategic plan built for your CEO, C-suite, and Board.
           </p>
 
-          {/* Plan Ready Banner — shown when a plan has been generated */}
-          {hasAccess && generatedPlan && (
-            <div className="mt-4 mb-2 mx-auto max-w-xl bg-card border border-primary/30 rounded-xl p-5 card-elevated text-left space-y-3">
-              <div className="flex items-start gap-3">
-                <div className="mt-0.5 w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
-                  <Sparkles className="w-4 h-4 text-primary" />
-                </div>
-                <div className="min-w-0">
-                  <p className="text-sm font-semibold text-card-foreground">
-                    Your AI Strategic Plan is Ready
-                  </p>
-                  <p className="text-xs text-muted-foreground mt-0.5">
-                    {companyName ? `Generated for ${companyName}` : "Your plan has been generated"}
-                    {planDate ? ` · ${planDate}` : ""}
-                  </p>
-                </div>
-              </div>
-              <div className="flex gap-2 pt-1">
-                <Button
-                  variant="hero"
-                  size="sm"
-                  onClick={() => navigate("/plan")}
-                  className="gap-1.5 flex-1"
-                >
-                  <FileText className="w-3.5 h-3.5" />
-                  View Your Plan
-                </Button>
-                <Button
-                  variant="outline-light"
-                  size="sm"
-                  onClick={() => navigate("/intake")}
-                  className="gap-1.5"
-                >
-                  Update Assessment
-                  <ArrowRight className="w-3.5 h-3.5" />
-                </Button>
-              </div>
-            </div>
-          )}
-
           {/* CTA — conditional on access */}
           <div className="pt-2">
             {hasAccess ? (
-              !generatedPlan && (
-                <Button
-                  variant="hero"
-                  size="lg"
-                  onClick={() => navigate("/intake")}
-                  className="text-base px-10 py-6 rounded-lg"
-                >
-                  Begin Assessment
-                  <ArrowRight className="ml-2 w-5 h-5" />
-                </Button>
-              )
+              <Button
+                variant="hero"
+                size="lg"
+                onClick={() => navigate("/intake")}
+                className="text-base px-10 py-6 rounded-lg"
+              >
+                Begin Assessment
+                <ArrowRight className="ml-2 w-5 h-5" />
+              </Button>
             ) : (
               <div className="space-y-3">
                 {redirected && (
