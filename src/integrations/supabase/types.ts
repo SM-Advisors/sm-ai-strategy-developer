@@ -46,7 +46,10 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      increment_access_code_use_count: {
+        Args: { p_code_id: string }
+        Returns: undefined
+      }
     }
     Enums: {
       [_ in never]: never
