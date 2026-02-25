@@ -149,14 +149,14 @@ const Plan = () => {
             className="plan-content-area bg-card rounded-xl p-5 sm:p-10 lg:p-12 card-elevated max-w-[800px]"
           >
             <article
-              className="plan-article prose prose-slate max-w-none
-                prose-headings:plan-heading-serif prose-headings:text-foreground
+              className="plan-article prose max-w-none text-gray-900
+                prose-headings:plan-heading-serif prose-headings:!text-gray-900
                 prose-h1:text-2xl sm:prose-h1:text-3xl prose-h1:mb-6 prose-h1:leading-tight
                 prose-h2:text-xl sm:prose-h2:text-2xl prose-h2:mt-12 prose-h2:mb-4 prose-h2:pb-3 prose-h2:border-b prose-h2:border-[hsl(var(--plan-section-divider))]
                 prose-h3:text-lg prose-h3:mt-8 prose-h3:mb-3 prose-h3:font-semibold
-                prose-p:text-foreground prose-p:leading-relaxed prose-p:text-[15px]
-                prose-li:text-foreground prose-li:text-[15px]
-                prose-strong:text-foreground
+                prose-p:!text-gray-900 prose-p:leading-relaxed prose-p:text-[15px]
+                prose-li:!text-gray-900 prose-li:text-[15px]
+                prose-strong:!text-gray-900
                 prose-table:text-sm prose-table:border-collapse prose-table:w-full prose-table:overflow-x-auto
                 prose-th:bg-[hsl(220,15%,96%)] prose-th:text-card-foreground prose-th:p-2 sm:prose-th:p-3 prose-th:text-left prose-th:font-semibold prose-th:border prose-th:border-[hsl(var(--card-border))]
                 prose-td:p-2 sm:prose-td:p-3 prose-td:border prose-td:border-[hsl(var(--card-border))] prose-td:align-top
