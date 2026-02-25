@@ -1,8 +1,11 @@
+import { useState } from "react";
 import { FieldConfig } from "@/config/intake-sections";
 import { useIntakeStore, IntakeFormData } from "@/stores/intake-store";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
+import { Collapsible, CollapsibleTrigger, CollapsibleContent } from "@/components/ui/collapsible";
+import { ChevronDown, ChevronUp } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 interface FormFieldProps {
@@ -14,6 +17,7 @@ interface FormFieldProps {
 const FormField = ({ field, error, questionNumber }: FormFieldProps) => {
   const store = useIntakeStore();
   const value = store[field.id as keyof IntakeFormData];
+  const [examplesOpen, setExamplesOpen] = useState(false);
 
   // Check showIf condition
   const isConditional = !!field.showIf;
@@ -41,6 +45,28 @@ const FormField = ({ field, error, questionNumber }: FormFieldProps) => {
           <span className="text-muted-foreground font-normal ml-1">(max {field.maxSelect})</span>
         )}
       </Label>
+
+      {field.helperText && (
+        <p className="text-xs text-muted-foreground leading-relaxed -mt-1">{field.helperText}</p>
+      )}
+
+      {field.examples && field.examples.length > 0 && (
+        <Collapsible open={examplesOpen} onOpenChange={setExamplesOpen} className="-mt-0.5">
+          <CollapsibleTrigger className="flex items-center gap-1 text-xs text-primary/70 hover:text-primary cursor-pointer transition-colors">
+            {examplesOpen ? <ChevronUp className="w-3 h-3" /> : <ChevronDown className="w-3 h-3" />}
+            {examplesOpen ? "Hide examples" : "See examples"}
+          </CollapsibleTrigger>
+          <CollapsibleContent className="overflow-hidden data-[state=open]:animate-slide-down data-[state=closed]:animate-slide-up">
+            <div className="bg-muted/30 rounded-md p-3 mt-1.5 space-y-2">
+              {field.examples.map((example, i) => (
+                <p key={i} className="text-xs text-muted-foreground leading-relaxed pl-3 border-l-2 border-primary/20">
+                  {example}
+                </p>
+              ))}
+            </div>
+          </CollapsibleContent>
+        </Collapsible>
+      )}
 
       {error && (
         <p className="text-destructive text-xs">This field is required</p>
