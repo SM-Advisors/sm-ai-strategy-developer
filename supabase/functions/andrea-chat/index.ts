@@ -248,7 +248,7 @@ serve(async (req) => {
       break;
     }
 
-    // Parse JSON from Claude's response (handle potential markdown code fences)
+    // Parse JSON from Claude's response (handle potential markdown code fences or preamble prose)
     let parsed;
     try {
       const cleaned = rawText
@@ -256,7 +256,16 @@ serve(async (req) => {
         .replace(/^```\s*/i, "")
         .replace(/\s*```$/i, "")
         .trim();
-      parsed = JSON.parse(cleaned);
+      try {
+        parsed = JSON.parse(cleaned);
+      } catch {
+        const jsonMatch = cleaned.match(/\{[\s\S]*\}/);
+        if (jsonMatch) {
+          parsed = JSON.parse(jsonMatch[0]);
+        } else {
+          throw new Error("No JSON object found");
+        }
+      }
     } catch {
       parsed = {
         reply: rawText || "I'm here to help! What would you like to know about the assessment?",
