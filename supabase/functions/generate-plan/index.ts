@@ -253,9 +253,14 @@ serve(async (req) => {
     if (!response.ok) {
       const errorText = await response.text();
       console.error("Anthropic API error:", response.status, errorText);
+      const isRateLimit = response.status === 429;
       return new Response(
-        JSON.stringify({ error: `Anthropic API error: ${response.status}` }),
-        { status: response.status, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        JSON.stringify({
+          error: isRateLimit
+            ? "The AI service is currently at capacity. Please wait 60 seconds and try again."
+            : `Anthropic API error: ${response.status}`,
+        }),
+        { status: 503, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
 
