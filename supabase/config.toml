@@ -3,5 +3,8 @@ project_id = "tlhrdaebbblfyuohsdsh"
 [functions.generate-plan]
 verify_jwt = false
 
+[functions.regen-plan]
+verify_jwt = false
+
 [functions.validate-code]
 verify_jwt = false
