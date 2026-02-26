@@ -9,6 +9,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { useAuthStore } from "@/stores/auth-store";
+import { lovable } from "@/integrations/lovable/index";
 
 const AdminBar = () => {
   const navigate = useNavigate();
@@ -57,7 +58,9 @@ const AdminBar = () => {
 
   return (
     <button
-      onClick={signInWithGoogle}
+      onClick={async () => {
+            await lovable.auth.signInWithOAuth("google", { redirect_uri: window.location.origin });
+          }}
       className="text-xs text-navy hover:text-navy/80 font-semibold transition-colors"
     >
       Admin

@@ -2,7 +2,7 @@ import { create } from "zustand";
 import type { User } from "@supabase/supabase-js";
 import { supabase } from "@/integrations/supabase/client";
 
-const ADMIN_EMAIL = "coryk@smaiadvisors.com";
+const ADMIN_EMAILS = ["coryk@smaiadvisors.com", "allim@smaiadvisors.com"];
 const ACCESS_CODE_KEY = "sm-access-code";
 
 interface AuthState {
@@ -26,7 +26,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
   hasAccess: false,
 
   setAdminUser: (user) => {
-    const isAdmin = user?.email === ADMIN_EMAIL;
+    const isAdmin = !!user?.email && ADMIN_EMAILS.includes(user.email);
     set({
       adminUser: user,
       isAdmin,
