@@ -201,12 +201,19 @@ serve(async (req) => {
       if (!response.ok) {
         const errorText = await response.text();
         console.error("Anthropic API error:", response.status, errorText);
+        if (response.status === 429) {
+          return new Response(
+            JSON.stringify({
+              reply: "I'm receiving a lot of requests right now and need a moment to catch up. Please try again in 30–60 seconds.",
+              suggestedPrompts: ["Try again"],
+              fieldEdits: [],
+            }),
+            { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+          );
+        }
         return new Response(
           JSON.stringify({ error: `Anthropic API error: ${response.status}` }),
-          {
-            status: response.status,
-            headers: { ...corsHeaders, "Content-Type": "application/json" },
-          }
+          { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
         );
       }
 

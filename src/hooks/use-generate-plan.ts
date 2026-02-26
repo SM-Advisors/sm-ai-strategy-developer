@@ -32,6 +32,7 @@ export function useGeneratePlan() {
         throw new Error(errData.error || `Error ${resp.status}`);
       }
 
+
       if (!resp.body) throw new Error("No response body");
 
       const reader = resp.body.getReader();
