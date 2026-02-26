@@ -13,7 +13,7 @@ export function useGeneratePlan() {
     store.setIsGenerating(true);
 
     const controller = new AbortController();
-    const timeout = setTimeout(() => controller.abort(), 150000); // 2.5 min hard timeout
+    const timeout = setTimeout(() => controller.abort(), 360000); // 6 min hard timeout
 
     try {
       const url = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/generate-plan`;

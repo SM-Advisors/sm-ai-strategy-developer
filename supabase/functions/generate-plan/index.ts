@@ -259,12 +259,36 @@ serve(async (req) => {
       );
     }
 
-    // Stream the SSE response back to the client
-    return new Response(response.body, {
+    // Stream the SSE response back with keepalive pings to prevent idle timeouts
+    const { readable, writable } = new TransformStream();
+    const writer = writable.getWriter();
+    const encoder = new TextEncoder();
+
+    (async () => {
+      const reader = response.body!.getReader();
+      // Send a keepalive comment every 15s to prevent gateway timeouts
+      const keepalive = setInterval(async () => {
+        try { await writer.write(encoder.encode(": keepalive\n\n")); } catch { /* ignore */ }
+      }, 15000);
+
+      try {
+        while (true) {
+          const { done, value } = await reader.read();
+          if (done) break;
+          await writer.write(value);
+        }
+      } finally {
+        clearInterval(keepalive);
+        writer.close().catch(() => {});
+      }
+    })();
+
+    return new Response(readable, {
       headers: {
         ...corsHeaders,
         "Content-Type": "text/event-stream",
         "Cache-Control": "no-cache",
+        "Connection": "keep-alive",
       },
     });
   } catch (e) {
