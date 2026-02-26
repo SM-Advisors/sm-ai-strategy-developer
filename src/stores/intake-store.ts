@@ -1,53 +1,8 @@
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
+import { IntakeFormData, defaultFormData } from "@/types/intake";
 
-export interface IntakeFormData {
-  // Section 1
-  companyName: string;
-  industry: string;
-  employeeCount: string;
-  departmentCount: string;
-  companyDescription: string;
-  businessPriorities: string;
-  // Section 2
-  executiveSponsor: string;
-  leadershipAttitude: string;
-  priorAIExperience: string;
-  priorAIDetails: string;
-  techAdoptionComfort: string;
-  // Section 3
-  corePlatforms: string;
-  vendorsWithAI: string;
-  vendorAIDetails: string;
-  currentAITools: string;
-  currentAIToolsDetails: string;
-  itSupportStructure: string;
-  // Section 4
-  timeConsumingTasks: string;
-  errorBottlenecks: string;
-  manualProcesses: string;
-  manualProcessesDetails: string;
-  highPotentialDepartments: string[];
-  // Section 5
-  success3Months: string;
-  success12Months: string;
-  topOutcomes: string[];
-  trackedKPIs: string;
-  // Section 6
-  sensitiveData: string;
-  complianceFrameworks: string;
-  riskConcernLevel: string;
-  riskNotes: string;
-  // Section 7
-  budgetAllocated: string;
-  budgetRange: string;
-  implementationOwner: string;
-  aiWorkingGroup: string;
-  // Section 8
-  biggestConcern: string;
-  mostExciting: string;
-  additionalNotes: string;
-}
+export type { IntakeFormData };
 
 interface IntakeStore extends IntakeFormData {
   currentStep: number;
@@ -65,27 +20,12 @@ interface IntakeStore extends IntakeFormData {
   getFormData: () => IntakeFormData;
 }
 
-const initialData: IntakeFormData = {
-  companyName: "", industry: "", employeeCount: "", departmentCount: "",
-  companyDescription: "", businessPriorities: "",
-  executiveSponsor: "", leadershipAttitude: "", priorAIExperience: "",
-  priorAIDetails: "", techAdoptionComfort: "",
-  corePlatforms: "", vendorsWithAI: "", vendorAIDetails: "",
-  currentAITools: "", currentAIToolsDetails: "", itSupportStructure: "",
-  timeConsumingTasks: "", errorBottlenecks: "", manualProcesses: "",
-  manualProcessesDetails: "", highPotentialDepartments: [],
-  success3Months: "", success12Months: "", topOutcomes: [], trackedKPIs: "",
-  sensitiveData: "", complianceFrameworks: "", riskConcernLevel: "", riskNotes: "",
-  budgetAllocated: "", budgetRange: "", implementationOwner: "", aiWorkingGroup: "",
-  biggestConcern: "", mostExciting: "", additionalNotes: "",
-};
-
-const formDataKeys = Object.keys(initialData) as (keyof IntakeFormData)[];
+const formDataKeys = Object.keys(defaultFormData) as (keyof IntakeFormData)[];
 
 export const useIntakeStore = create<IntakeStore>()(
   persist(
     (set, get) => ({
-      ...initialData,
+      ...defaultFormData,
       currentStep: 0,
       generatedPlan: "",
       planGeneratedAt: "",

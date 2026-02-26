@@ -41,6 +41,36 @@ export type Database = {
         }
         Relationships: []
       }
+      submissions: {
+        Row: {
+          company_name: string | null
+          created_at: string
+          id: string
+          industry: string | null
+          intake_data: Json
+          num_employees: string | null
+          plan_file_path: string | null
+        }
+        Insert: {
+          company_name?: string | null
+          created_at?: string
+          id?: string
+          industry?: string | null
+          intake_data: Json
+          num_employees?: string | null
+          plan_file_path?: string | null
+        }
+        Update: {
+          company_name?: string | null
+          created_at?: string
+          id?: string
+          industry?: string | null
+          intake_data?: Json
+          num_employees?: string | null
+          plan_file_path?: string | null
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
