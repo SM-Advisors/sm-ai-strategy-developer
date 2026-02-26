@@ -19,10 +19,9 @@ AI strategy must be built on top of corporate strategy — not separate from it.
 - **Short-term (6-9 months):** Act on the best ideas from the hub. Build AI agents and simple automated workflows. Activate vendor AI features using the skills built in Phase 1.
 - **Long-term (12-24 months):** Evaluate new vendors for larger solutions. Scale successful Phase 1/2 projects across departments. Tackle broader, more complex initiatives.
 
-KPIs must be tied to ROI and management decision-making — NOT vanity metrics like adoption rate, number of logins, or tools deployed. Measure: time saved, costs reduced, revenue influenced, positions not needed to hire, error reduction, and ideas captured.
+KPIs must be tied to ROI and management decision-making — NOT vanity metrics. Measure: time saved, costs reduced, revenue influenced, positions not needed to hire, error reduction, and ideas captured.
 
 ## Output Structure (use markdown with proper heading hierarchy)
-
 ### I. Executive Summary
 ### II. Organizational Context Used
 ### III. Key Assumptions
@@ -57,41 +56,31 @@ function buildUserPrompt(data: Record<string, any>): string {
 - Executive Sponsor: ${v("executiveSponsor")}
 - Leadership Attitude toward AI: ${v("leadershipAttitude")}
 - Prior AI Experience: ${v("priorAIExperience")}
-- Prior AI Details: ${v("priorAIDetails")}
 - Technology Adoption Comfort: ${v("techAdoptionComfort")}
 
 ## Current Technology & Vendors
 - Core Software Platforms: ${v("corePlatforms")}
-- Vendors with AI Features: ${v("vendorsWithAI")}
-- Vendor AI Details: ${v("vendorAIDetails")}
 - Current AI Tool Usage: ${v("currentAITools")}
-- AI Tool Details: ${v("currentAIToolsDetails")}
 - IT Support Structure: ${v("itSupportStructure")}
 
 ## Workflows & Pain Points
 - Most Time-Consuming Tasks: ${v("timeConsumingTasks")}
 - Common Errors/Delays/Bottlenecks: ${v("errorBottlenecks")}
-- Manual Data Entry/Document Handling: ${v("manualProcesses")}
-- Manual Process Details: ${v("manualProcessesDetails")}
 - Departments with Highest AI Potential: ${v("highPotentialDepartments")}
 
 ## Goals & Success Metrics
 - 3-Month Success Vision: ${v("success3Months")}
 - 12-24 Month Success Vision: ${v("success12Months")}
 - Top Desired Outcomes: ${v("topOutcomes")}
-- Existing KPIs to Impact: ${v("trackedKPIs")}
 
 ## Governance & Risk
 - Sensitive Data Handling: ${v("sensitiveData")}
 - Compliance Frameworks: ${v("complianceFrameworks")}
 - Leadership Risk Concern Level: ${v("riskConcernLevel")}
-- Specific Risk Concerns: ${v("riskNotes")}
 
 ## Budget & Resources
-- Budget Status: ${v("budgetAllocated")}
 - Annual Budget Range: ${v("budgetRange")}
 - Implementation Owner: ${v("implementationOwner")}
-- AI Working Group Appetite: ${v("aiWorkingGroup")}
 
 ## Open Reflection
 - Biggest Concern: ${v("biggestConcern")}
@@ -116,11 +105,10 @@ serve(async (req) => {
     if (!formData || !submissionId) throw new Error("formData and submissionId are required");
 
     const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
-
     const userPrompt = buildUserPrompt(formData);
 
-    // Call Anthropic non-streaming to avoid long-lived connection issues
-    const response = await fetch("https://api.anthropic.com/v1/messages", {
+    // Stream from Anthropic and accumulate full plan, while sending keepalives to client
+    const anthropicResp = await fetch("https://api.anthropic.com/v1/messages", {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
@@ -130,49 +118,103 @@ serve(async (req) => {
       body: JSON.stringify({
         model: "claude-sonnet-4-6",
         max_tokens: 16384,
-        stream: false,
+        stream: true,
         system: SYSTEM_PROMPT,
         messages: [{ role: "user", content: userPrompt }],
       }),
     });
 
-    if (!response.ok) {
-      const errText = await response.text();
-      console.error("Anthropic error:", response.status, errText);
-      const isRateLimit = response.status === 429;
+    if (!anthropicResp.ok) {
+      const errText = await anthropicResp.text();
+      console.error("Anthropic error:", anthropicResp.status, errText);
+      const isRateLimit = anthropicResp.status === 429;
       return new Response(
         JSON.stringify({
           error: isRateLimit
             ? "The AI service is currently at capacity. Please wait 60 seconds and try again."
-            : `Anthropic API error: ${response.status}`,
+            : `Anthropic API error: ${anthropicResp.status}`,
         }),
         { status: 503, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
 
-    const result = await response.json();
-    const planText = result.content?.[0]?.text;
-    if (!planText) throw new Error("No plan text returned from Anthropic");
+    // Use a TransformStream to send SSE keepalives while accumulating the plan
+    const { readable, writable } = new TransformStream();
+    const writer = writable.getWriter();
+    const encoder = new TextEncoder();
 
-    // Upload to storage
-    const fileName = `${submissionId}/plan.md`;
-    const blob = new Blob([planText], { type: "text/markdown" });
-    const { error: uploadErr } = await supabase.storage
-      .from("plans")
-      .upload(fileName, blob, { contentType: "text/markdown", upsert: true });
-    if (uploadErr) throw new Error(`Storage upload failed: ${uploadErr.message}`);
+    // Process in background
+    (async () => {
+      const reader = anthropicResp.body!.getReader();
+      const decoder = new TextDecoder();
+      let buffer = "";
+      let planText = "";
 
-    // Update submission record
-    const { error: updateErr } = await supabase
-      .from("submissions")
-      .update({ plan_file_path: fileName })
-      .eq("id", submissionId);
-    if (updateErr) throw new Error(`DB update failed: ${updateErr.message}`);
+      // Send keepalive every 10s so gateway doesn't close the connection
+      const keepalive = setInterval(async () => {
+        try { await writer.write(encoder.encode(": keepalive\n\n")); } catch { /* ignore */ }
+      }, 10000);
 
-    return new Response(
-      JSON.stringify({ success: true, plan_file_path: fileName }),
-      { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-    );
+      try {
+        while (true) {
+          const { done, value } = await reader.read();
+          if (done) break;
+          buffer += decoder.decode(value, { stream: true });
+
+          let newlineIdx: number;
+          while ((newlineIdx = buffer.indexOf("\n")) !== -1) {
+            let line = buffer.slice(0, newlineIdx);
+            buffer = buffer.slice(newlineIdx + 1);
+            if (line.endsWith("\r")) line = line.slice(0, -1);
+            if (!line.startsWith("data: ") || line.trim() === "") continue;
+            const jsonStr = line.slice(6).trim();
+            if (jsonStr === "[DONE]") continue;
+            try {
+              const parsed = JSON.parse(jsonStr);
+              if (parsed.type === "content_block_delta" && parsed.delta?.text) {
+                planText += parsed.delta.text;
+              }
+            } catch { /* skip */ }
+          }
+        }
+
+        if (!planText) throw new Error("No plan text received from Anthropic");
+
+        // Upload to storage
+        const fileName = `${submissionId}/plan.md`;
+        const blob = new Blob([planText], { type: "text/markdown" });
+        const { error: uploadErr } = await supabase.storage
+          .from("plans")
+          .upload(fileName, blob, { contentType: "text/markdown", upsert: true });
+        if (uploadErr) throw new Error(`Storage upload failed: ${uploadErr.message}`);
+
+        // Update submission
+        const { error: updateErr } = await supabase
+          .from("submissions")
+          .update({ plan_file_path: fileName })
+          .eq("id", submissionId);
+        if (updateErr) throw new Error(`DB update failed: ${updateErr.message}`);
+
+        // Send final success event
+        await writer.write(encoder.encode(`data: ${JSON.stringify({ success: true, plan_file_path: fileName })}\n\n`));
+        console.log("regen-plan success:", fileName);
+      } catch (err) {
+        console.error("regen-plan background error:", err);
+        await writer.write(encoder.encode(`data: ${JSON.stringify({ error: String(err) })}\n\n`));
+      } finally {
+        clearInterval(keepalive);
+        writer.close().catch(() => {});
+      }
+    })();
+
+    return new Response(readable, {
+      headers: {
+        ...corsHeaders,
+        "Content-Type": "text/event-stream",
+        "Cache-Control": "no-cache",
+        "Connection": "keep-alive",
+      },
+    });
   } catch (e) {
     console.error("regen-plan error:", e);
     return new Response(
