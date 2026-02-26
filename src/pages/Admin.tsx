@@ -171,19 +171,60 @@ const Admin = () => {
           "Content-Type": "application/json",
           Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
         },
-        body: JSON.stringify({ formData: submission.intake_data, submissionId: submission.id }),
+        body: JSON.stringify({ formData: submission.intake_data }),
         signal: controller.signal,
       });
       if (!resp.ok) {
         const err = await resp.json().catch(() => ({}));
         throw new Error((err as any).error || `Error ${resp.status}`);
       }
+      if (!resp.body) throw new Error("No response body");
+
+      // Consume the SSE stream and accumulate plan text
+      const reader = resp.body.getReader();
+      const decoder = new TextDecoder();
+      let buffer = "";
+      let planText = "";
+
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        buffer += decoder.decode(value, { stream: true });
+        let newlineIdx: number;
+        while ((newlineIdx = buffer.indexOf("\n")) !== -1) {
+          let line = buffer.slice(0, newlineIdx);
+          buffer = buffer.slice(newlineIdx + 1);
+          if (line.endsWith("\r")) line = line.slice(0, -1);
+          if (!line.startsWith("data: ") || line.trim() === "") continue;
+          const jsonStr = line.slice(6).trim();
+          if (jsonStr === "[DONE]") continue;
+          try {
+            const parsed = JSON.parse(jsonStr);
+            if (parsed.type === "content_block_delta" && parsed.delta?.text) {
+              planText += parsed.delta.text;
+            }
+          } catch { /* skip */ }
+        }
+      }
+
+      if (!planText) throw new Error("No plan content received");
+
+      // Upload to storage and update submission
+      const fileName = `${submission.id}/plan.md`;
+      const blob = new Blob([planText], { type: "text/markdown" });
+      const { error: uploadErr } = await (supabase as any).storage
+        .from("plans")
+        .upload(fileName, blob, { contentType: "text/markdown", upsert: true });
+      if (uploadErr) throw uploadErr;
+
+      await (supabase as any)
+        .from("submissions")
+        .update({ plan_file_path: fileName })
+        .eq("id", submission.id);
+
       clearTimeout(timeout);
       toast.success("Plan regenerated successfully");
       await refetchSubmissions();
-      // Auto-download if path updated
-      const updated = submissions.find((s) => s.id === submission.id);
-      if (updated?.plan_file_path) handleDownload(updated);
     } catch (err: any) {
       clearTimeout(timeout);
       if (err.name === "AbortError") {
