@@ -1,6 +1,7 @@
 import { useIntakeStore } from "@/stores/intake-store";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
+import { supabase } from "@/integrations/supabase/client";
 
 export function useGeneratePlan() {
   const store = useIntakeStore();
@@ -80,6 +81,23 @@ export function useGeneratePlan() {
 
       clearTimeout(timeout);
       store.setIsGenerating(false);
+
+      // Save submission record (fire-and-forget — don't block navigation)
+      const finalPlan = store.generatedPlan || useIntakeStore.getState().generatedPlan;
+      const fd = formData;
+      (async () => {
+        try {
+          await (supabase as any).from("submissions").insert({
+            company_name: fd.companyName || null,
+            industry: fd.industry || null,
+            num_employees: fd.employeeCount || null,
+            intake_data: fd,
+          });
+        } catch (err) {
+          console.warn("Failed to save submission:", err);
+        }
+      })();
+
       navigate("/plan");
     } catch (err: any) {
       clearTimeout(timeout);
