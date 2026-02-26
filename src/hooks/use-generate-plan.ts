@@ -83,19 +83,41 @@ export function useGeneratePlan() {
       clearTimeout(timeout);
       store.setIsGenerating(false);
 
-      // Save submission record (fire-and-forget — don't block navigation)
-      const finalPlan = store.generatedPlan || useIntakeStore.getState().generatedPlan;
+      // Save submission + upload plan to storage (fire-and-forget)
+      const finalPlan = useIntakeStore.getState().generatedPlan;
       const fd = formData;
       (async () => {
         try {
-          await (supabase as any).from("submissions").insert({
-            company_name: fd.companyName || null,
-            industry: fd.industry || null,
-            num_employees: fd.employeeCount || null,
-            intake_data: fd,
-          });
+          // Insert submission and get back the ID
+          const { data: submission, error: insertErr } = await (supabase as any)
+            .from("submissions")
+            .insert({
+              company_name: fd.companyName || null,
+              industry: fd.industry || null,
+              num_employees: fd.employeeCount || null,
+              intake_data: fd,
+            })
+            .select("id")
+            .single();
+
+          if (insertErr) throw insertErr;
+
+          // Upload plan markdown to storage
+          const fileName = `${submission.id}/plan.md`;
+          const blob = new Blob([finalPlan], { type: "text/markdown" });
+          const { error: uploadErr } = await (supabase as any).storage
+            .from("plans")
+            .upload(fileName, blob, { contentType: "text/markdown", upsert: true });
+
+          if (uploadErr) throw uploadErr;
+
+          // Update submission with plan file path
+          await (supabase as any)
+            .from("submissions")
+            .update({ plan_file_path: fileName })
+            .eq("id", submission.id);
         } catch (err) {
-          console.warn("Failed to save submission:", err);
+          console.warn("Failed to save submission/plan:", err);
         }
       })();
 
