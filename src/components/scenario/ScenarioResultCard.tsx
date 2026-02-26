@@ -72,7 +72,7 @@ export default function ScenarioResultCard({ result }: ScenarioResultCardProps) 
   const sentiment = sentimentColors[result.overallSentiment] || sentimentColors.Concerned;
 
   return (
-    <div className={cn("bg-card rounded-xl border card-elevated overflow-hidden", sentiment.border)}>
+    <div className={cn("bg-card rounded-xl border card-elevated", sentiment.border)}>
       {/* Header */}
       <div className={cn("px-5 py-4 border-b", sentiment.border, sentiment.bg)}>
         <div className="flex items-center justify-between gap-3">
