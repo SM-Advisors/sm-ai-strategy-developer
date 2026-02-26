@@ -184,7 +184,7 @@ ${planMarkdown || "[No plan available]"}
       break;
     }
 
-    // Parse JSON from response
+    // Parse JSON from response (handle potential markdown code fences or preamble prose)
     let parsed;
     try {
       const cleaned = rawText
@@ -192,7 +192,16 @@ ${planMarkdown || "[No plan available]"}
         .replace(/^```\s*/i, "")
         .replace(/\s*```$/i, "")
         .trim();
-      parsed = JSON.parse(cleaned);
+      try {
+        parsed = JSON.parse(cleaned);
+      } catch {
+        const jsonMatch = cleaned.match(/\{[\s\S]*\}/);
+        if (jsonMatch) {
+          parsed = JSON.parse(jsonMatch[0]);
+        } else {
+          throw new Error("No JSON object found");
+        }
+      }
     } catch {
       parsed = {
         reply: rawText || "I'm here to help review your AI Strategic Plan. What would you like to explore?",

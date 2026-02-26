@@ -165,12 +165,25 @@ ${planMarkdown || "[No plan available]"}
 
     let parsed;
     try {
+      // Strip markdown fences first
       const cleaned = rawText
         .replace(/^```json\s*/i, "")
         .replace(/^```\s*/i, "")
         .replace(/\s*```$/i, "")
         .trim();
-      parsed = JSON.parse(cleaned);
+
+      // Try direct parse first
+      try {
+        parsed = JSON.parse(cleaned);
+      } catch {
+        // Extract first {...} block from text (model may prepend prose before the JSON)
+        const jsonMatch = cleaned.match(/\{[\s\S]*\}/);
+        if (jsonMatch) {
+          parsed = JSON.parse(jsonMatch[0]);
+        } else {
+          throw new Error("No JSON object found");
+        }
+      }
     } catch {
       parsed = {
         reply: rawText || "I'm here to help you understand your scenario results. What would you like to explore?",
