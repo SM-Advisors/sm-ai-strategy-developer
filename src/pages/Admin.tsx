@@ -162,7 +162,7 @@ const Admin = () => {
   const handleRegenerate = async (submission: Submission) => {
     setRegeneratingId(submission.id);
     const controller = new AbortController();
-    const timeout = setTimeout(() => controller.abort(), 300_000); // 5 min
+    const timeout = setTimeout(() => controller.abort(), 360_000); // 6 min
     try {
       const url = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/regen-plan`;
       const resp = await fetch(url, {
@@ -174,9 +174,40 @@ const Admin = () => {
         body: JSON.stringify({ formData: submission.intake_data, submissionId: submission.id }),
         signal: controller.signal,
       });
+
+      if (!resp.ok) {
+        const err = await resp.json().catch(() => ({}));
+        throw new Error((err as any).error || `Error ${resp.status}`);
+      }
+      if (!resp.body) throw new Error("No response body");
+
+      // Read SSE stream until we get a final data event
+      const reader = resp.body.getReader();
+      const decoder = new TextDecoder();
+      let buffer = "";
+      let result: { success?: boolean; error?: string } | null = null;
+
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        buffer += decoder.decode(value, { stream: true });
+        let newlineIdx: number;
+        while ((newlineIdx = buffer.indexOf("\n")) !== -1) {
+          const line = buffer.slice(0, newlineIdx).replace(/\r$/, "");
+          buffer = buffer.slice(newlineIdx + 1);
+          if (!line.startsWith("data: ") || line.trim() === "") continue;
+          const jsonStr = line.slice(6).trim();
+          try {
+            result = JSON.parse(jsonStr);
+          } catch { /* skip */ }
+        }
+        if (result) break;
+      }
+
       clearTimeout(timeout);
-      const data = await resp.json().catch(() => ({}));
-      if (!resp.ok) throw new Error((data as any).error || `Error ${resp.status}`);
+      if (result?.error) throw new Error(result.error);
+      if (!result?.success) throw new Error("No success confirmation received");
+
       toast.success("Plan regenerated successfully");
       await refetchSubmissions();
     } catch (err: any) {
