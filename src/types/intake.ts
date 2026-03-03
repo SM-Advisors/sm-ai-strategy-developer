@@ -25,6 +25,7 @@ export interface IntakeFormData {
   manualProcesses: string;
   manualProcessesDetails: string;
   highPotentialDepartments: string[];
+  highPotentialDepartmentsDetails: string;
   // Section 5 – Goals & Success Metrics
   success3Months: string;
   success12Months: string;
@@ -54,7 +55,7 @@ export const defaultFormData: IntakeFormData = {
   corePlatforms: "", vendorsWithAI: "", vendorAIDetails: "",
   currentAITools: "", currentAIToolsDetails: "", itSupportStructure: "",
   timeConsumingTasks: "", errorBottlenecks: "", manualProcesses: "",
-  manualProcessesDetails: "", highPotentialDepartments: [],
+  manualProcessesDetails: "", highPotentialDepartments: [], highPotentialDepartmentsDetails: "",
   success3Months: "", success12Months: "", topOutcomes: [], trackedKPIs: "",
   sensitiveData: "", complianceFrameworks: "", riskConcernLevel: "", riskNotes: "",
   budgetAllocated: "", budgetRange: "", implementationOwner: "", aiWorkingGroup: "",
