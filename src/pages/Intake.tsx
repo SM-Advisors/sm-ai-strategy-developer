@@ -113,7 +113,7 @@ const Intake = () => {
       </header>
 
       <main className="max-w-3xl mx-auto px-6 py-8 space-y-8">
-        <ProgressBar currentStep={currentStep} totalSteps={TOTAL_STEPS} />
+        <ProgressBar currentStep={currentStep} totalSteps={TOTAL_STEPS} onStepClick={(step) => { setCurrentStep(step); setErrors(new Set()); window.scrollTo({ top: 0, behavior: "smooth" }); }} />
 
         <div className="bg-card rounded-xl p-6 sm:p-8 card-elevated animate-fade-in" key={currentStep}>
           {isReviewStep ? (
