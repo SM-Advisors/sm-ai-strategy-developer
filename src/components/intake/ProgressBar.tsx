@@ -4,9 +4,10 @@ import { cn } from "@/lib/utils";
 interface ProgressBarProps {
   currentStep: number;
   totalSteps?: number;
+  onStepClick?: (step: number) => void;
 }
 
-const ProgressBar = ({ currentStep, totalSteps }: ProgressBarProps) => {
+const ProgressBar = ({ currentStep, totalSteps, onStepClick }: ProgressBarProps) => {
   const total = totalSteps || sections.length;
   const isReview = currentStep === sections.length;
   const progress = isReview ? 100 : ((currentStep + 1) / total) * 100;
@@ -29,10 +30,12 @@ const ProgressBar = ({ currentStep, totalSteps }: ProgressBarProps) => {
 
       <div className="hidden md:flex items-center gap-1">
         {sectionLabels.map((label, i) => (
-          <div
+          <button
             key={label}
+            type="button"
+            onClick={() => onStepClick?.(i)}
             className={cn(
-              "flex-1 text-center text-[11px] py-1.5 rounded transition-colors duration-300",
+              "flex-1 text-center text-[11px] py-1.5 rounded transition-colors duration-300 cursor-pointer hover:bg-primary/5",
               i === currentStep
                 ? "text-primary font-semibold bg-primary/10"
                 : i < currentStep || isReview
@@ -41,7 +44,7 @@ const ProgressBar = ({ currentStep, totalSteps }: ProgressBarProps) => {
             )}
           >
             {label}
-          </div>
+          </button>
         ))}
       </div>
     </div>
