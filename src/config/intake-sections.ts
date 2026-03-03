@@ -243,6 +243,18 @@ export const sections: SectionConfig[] = [
         ],
       },
       {
+        id: "success6Months",
+        label: "What does success look like at 6-9 months?",
+        type: "textarea",
+        required: true,
+        helperText: "This phase typically focuses on completing your first low-cost, high-success-rate internal use case, building automations around it, and beginning to leverage AI features already available through your existing vendors.",
+        examples: [
+          "We've completed our first internal automation — AI-assisted loan document prep — and it's saving 4 hours per package. We've activated AI features in our core banking platform and document management system. The AI working group has evaluated 3 vendor AI tools and rolled out one bank-wide.",
+          "Our first use case (automated compliance report drafting) is running reliably and has been presented to the board as a success story. We're piloting a second project in commercial banking. We've turned on AI-powered search in our document management system and staff adoption is at 60%.",
+          "We have a repeatable process for identifying and deploying AI projects. Our initial automation saves 20+ hours per month. We've reviewed every vendor contract for available AI features and activated the top 3. Department heads are submitting their own project ideas through our intake process.",
+        ],
+      },
+      {
         id: "success12Months",
         label: "What does success look like at 12-24 months?",
         type: "textarea",
