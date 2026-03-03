@@ -28,6 +28,7 @@ export interface IntakeFormData {
   highPotentialDepartmentsDetails: string;
   // Section 5 – Goals & Success Metrics
   success3Months: string;
+  success6Months: string;
   success12Months: string;
   topOutcomes: string[];
   trackedKPIs: string;
@@ -56,7 +57,7 @@ export const defaultFormData: IntakeFormData = {
   currentAITools: "", currentAIToolsDetails: "", itSupportStructure: "",
   timeConsumingTasks: "", errorBottlenecks: "", manualProcesses: "",
   manualProcessesDetails: "", highPotentialDepartments: [], highPotentialDepartmentsDetails: "",
-  success3Months: "", success12Months: "", topOutcomes: [], trackedKPIs: "",
+  success3Months: "", success6Months: "", success12Months: "", topOutcomes: [], trackedKPIs: "",
   sensitiveData: "", complianceFrameworks: "", riskConcernLevel: "", riskNotes: "",
   budgetAllocated: "", budgetRange: "", implementationOwner: "", aiWorkingGroup: "",
   biggestConcern: "", mostExciting: "", additionalNotes: "",
