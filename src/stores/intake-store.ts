@@ -153,7 +153,7 @@ export const useIntakeStore = create<IntakeStore>()((set, get) => ({
     for (const key of formDataKeys) {
       data[key] = state[key];
     }
-    return data as IntakeFormData;
+    return data as unknown as IntakeFormData;
   },
 
   loadFromServer: async (accessCodeId: string) => {
