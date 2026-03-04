@@ -144,6 +144,25 @@ function extractFinalText(content: Array<{ type: string; text?: string }>): stri
   return textBlocks[textBlocks.length - 1]?.text || "";
 }
 
+async function fetchWithRetry(
+  url: string,
+  options: RequestInit,
+  maxRetries = 3
+): Promise<Response> {
+  let lastResponse: Response | null = null;
+  for (let attempt = 0; attempt <= maxRetries; attempt++) {
+    const response = await fetch(url, options);
+    if (response.status !== 429) return response;
+    lastResponse = response;
+    if (attempt < maxRetries) {
+      const retryAfter = response.headers.get("retry-after");
+      const delay = retryAfter ? parseInt(retryAfter, 10) * 1000 : Math.pow(2, attempt) * 1000;
+      await new Promise((resolve) => setTimeout(resolve, delay));
+    }
+  }
+  return lastResponse!;
+}
+
 serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
@@ -181,7 +200,7 @@ serve(async (req) => {
     const maxIterations = 5;
 
     for (let iteration = 0; iteration < maxIterations; iteration++) {
-      const response = await fetch("https://api.anthropic.com/v1/messages", {
+      const response = await fetchWithRetry("https://api.anthropic.com/v1/messages", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
