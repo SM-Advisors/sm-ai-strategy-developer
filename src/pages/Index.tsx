@@ -52,30 +52,11 @@ const Index = () => {
       <main className="flex-1 flex flex-col items-center justify-center px-6 py-4 min-h-0">
         <div className="w-full max-w-4xl flex flex-col items-center gap-4">
 
-          {/* Heading + description */}
-          <div className="text-center space-y-1.5">
+          {/* Heading */}
+          <div className="text-center">
             <h1 className="text-3xl sm:text-4xl font-serif leading-tight tracking-tight">
               AI Strategic Planner
             </h1>
-            <p className="text-sm sm:text-base text-muted-foreground max-w-xl mx-auto leading-relaxed">
-              Build your institutional-grade AI strategy in minutes. Complete the intake below — your responses are analyzed by AI to produce a customized plan for your CEO, C-suite, and Board.
-            </p>
-          </div>
-
-          {/* Feature pills */}
-          <div className="flex flex-wrap items-center justify-center gap-5 text-muted-foreground text-xs">
-            <div className="flex items-center gap-1.5">
-              <Shield className="w-3.5 h-3.5 text-primary" />
-              <span>Enterprise Governance</span>
-            </div>
-            <div className="flex items-center gap-1.5">
-              <BarChart3 className="w-3.5 h-3.5 text-primary" />
-              <span>ROI-Focused</span>
-            </div>
-            <div className="flex items-center gap-1.5">
-              <Lightbulb className="w-3.5 h-3.5 text-primary" />
-              <span>Board-Ready Output</span>
-            </div>
           </div>
 
           {/* CTA — conditional on access */}
