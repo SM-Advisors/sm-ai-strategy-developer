@@ -28,7 +28,7 @@ const STEPS = [
 const Index = () => {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
-  const { hasAccess, session, isAdmin } = useAuthStore();
+  const { hasAccess, session, isAdmin, clearOrgSession } = useAuthStore();
 
   const redirected = searchParams.get("redirect") === "true";
   const hasExisting = session?.hasExistingSubmission || false;
@@ -83,10 +83,19 @@ const Index = () => {
                   </Button>
                 )}
                 {session && (
-                  <p className="text-xs text-muted-foreground">
-                    Signed in as {session.userName}
-                    {session.orgName ? ` · ${session.orgName}` : ""}
-                  </p>
+                  <div className="flex flex-col items-center gap-1">
+                    <p className="text-xs text-muted-foreground">
+                      Signed in as {session.userName}
+                      {session.orgName ? ` · ${session.orgName}` : ""}
+                    </p>
+                    <button
+                      type="button"
+                      onClick={() => clearOrgSession()}
+                      className="text-xs text-muted-foreground/60 hover:text-foreground transition-colors underline"
+                    >
+                      Switch organization
+                    </button>
+                  </div>
                 )}
               </>
             ) : (
