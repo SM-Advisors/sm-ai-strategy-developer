@@ -1,6 +1,6 @@
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import { ArrowRight, Shield, BarChart3, Lightbulb, ClipboardList, Brain, FileText } from "lucide-react";
+import { ArrowRight, ClipboardList, Brain, FileText } from "lucide-react";
 import { useEffect } from "react";
 import AdminBar from "@/components/AdminBar";
 import AccessCodeEntry from "@/components/AccessCodeEntry";
