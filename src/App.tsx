@@ -17,11 +17,11 @@ import { useAuthStore } from "./stores/auth-store";
 const queryClient = new QueryClient();
 
 function AuthProvider({ children }: { children: React.ReactNode }) {
-  const { setAdminUser, checkStoredCode } = useAuthStore();
+  const { setAdminUser, hydrateSession } = useAuthStore();
 
   useEffect(() => {
-    // Restore access code from localStorage on startup
-    checkStoredCode();
+    // Restore session from sessionStorage on startup (clears on browser close)
+    hydrateSession();
 
     // Listen for Supabase auth state changes (handles OAuth redirects)
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {

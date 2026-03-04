@@ -1,4 +1,5 @@
 import { useIntakeStore } from "@/stores/intake-store";
+import { useAuthStore } from "@/stores/auth-store";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
@@ -83,27 +84,47 @@ export function useGeneratePlan() {
       clearTimeout(timeout);
       store.setIsGenerating(false);
 
-      // Save submission + upload plan to storage (fire-and-forget)
+      // Save/update submission + upload plan to storage (fire-and-forget)
       const finalPlan = useIntakeStore.getState().generatedPlan;
+      const existingSubmissionId = useIntakeStore.getState().submissionId;
+      const session = useAuthStore.getState().session;
       const fd = formData;
       (async () => {
         try {
-          // Insert submission and get back the ID
-          const { data: submission, error: insertErr } = await (supabase as any)
-            .from("submissions")
-            .insert({
-              company_name: fd.companyName || null,
-              industry: fd.industry || null,
-              num_employees: fd.employeeCount || null,
-              intake_data: fd,
-            })
-            .select("id")
-            .single();
+          let submissionId = existingSubmissionId;
 
-          if (insertErr) throw insertErr;
+          if (submissionId) {
+            // Update existing org submission
+            await (supabase as any)
+              .from("submissions")
+              .update({
+                company_name: fd.companyName || null,
+                industry: fd.industry || null,
+                num_employees: fd.employeeCount || null,
+                intake_data: fd,
+              })
+              .eq("id", submissionId);
+          } else {
+            // Fallback: insert new submission
+            const { data: submission, error: insertErr } = await (supabase as any)
+              .from("submissions")
+              .insert({
+                company_name: fd.companyName || null,
+                industry: fd.industry || null,
+                num_employees: fd.employeeCount || null,
+                intake_data: fd,
+                access_code_id: session?.accessCodeId ?? null,
+              })
+              .select("id")
+              .single();
+
+            if (insertErr) throw insertErr;
+            submissionId = submission.id;
+            useIntakeStore.getState().setSubmissionId(submissionId);
+          }
 
           // Upload plan markdown to storage
-          const fileName = `${submission.id}/plan.md`;
+          const fileName = `${submissionId}/plan.md`;
           const blob = new Blob([finalPlan], { type: "text/markdown" });
           const { error: uploadErr } = await (supabase as any).storage
             .from("plans")
@@ -115,7 +136,12 @@ export function useGeneratePlan() {
           await (supabase as any)
             .from("submissions")
             .update({ plan_file_path: fileName })
-            .eq("id", submission.id);
+            .eq("id", submissionId);
+
+          // Update session state so index page shows "View Your Plan"
+          if (session) {
+            useAuthStore.getState().updateSessionSubmissionState(true, true);
+          }
         } catch (err) {
           console.warn("Failed to save submission/plan:", err);
         }

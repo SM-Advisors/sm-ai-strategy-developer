@@ -14,6 +14,11 @@ import {
   RefreshCw,
   FileX,
   ClipboardList,
+  Users,
+  ChevronDown,
+  ChevronUp,
+  Eye,
+  X,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -23,14 +28,24 @@ import { useAuthStore } from "@/stores/auth-store";
 import { toast } from "sonner";
 import { format } from "date-fns";
 import { IntakeFormData } from "@/types/intake";
+import { sections } from "@/config/intake-sections";
+
+interface OrgUser {
+  id: string;
+  name: string;
+  email: string;
+  created_at: string;
+}
 
 interface AccessCode {
   id: string;
   code: string;
   label: string | null;
+  org_name: string | null;
   is_active: boolean;
   use_count: number;
   created_at: string;
+  org_users?: OrgUser[];
 }
 
 interface Submission {
@@ -41,6 +56,7 @@ interface Submission {
   intake_data: IntakeFormData;
   plan_file_path: string | null;
   created_at: string;
+  access_code_id: string | null;
 }
 
 // Generate a code in SM-XXXX-XXXX format
@@ -61,6 +77,8 @@ const Admin = () => {
   const [downloadingId, setDownloadingId] = useState<string | null>(null);
   const [regeneratingId, setRegeneratingId] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<"codes" | "submissions">("codes");
+  const [expandedCodeId, setExpandedCodeId] = useState<string | null>(null);
+  const [detailSubmission, setDetailSubmission] = useState<Submission | null>(null);
 
   useEffect(() => {
     document.title = "Admin Panel — AI Strategic Planner";
@@ -70,13 +88,13 @@ const Admin = () => {
     if (!isAdmin) navigate("/");
   }, [isAdmin, navigate]);
 
-  // Fetch all access codes
+  // Fetch all access codes with org_users
   const { data: codes = [], isLoading: codesLoading } = useQuery<AccessCode[]>({
     queryKey: ["access-codes"],
     queryFn: async () => {
       const { data, error } = await (supabase as any)
         .from("access_codes")
-        .select("*")
+        .select("*, org_users(id, name, email, created_at)")
         .order("created_at", { ascending: false });
       if (error) throw error;
       return data as AccessCode[];
@@ -90,7 +108,7 @@ const Admin = () => {
     queryFn: async () => {
       const { data, error } = await (supabase as any)
         .from("submissions")
-        .select("id, company_name, industry, num_employees, intake_data, plan_file_path, created_at")
+        .select("id, company_name, industry, num_employees, intake_data, plan_file_path, created_at, access_code_id")
         .order("created_at", { ascending: false });
       if (error) throw error;
       return data as Submission[];
@@ -222,10 +240,72 @@ const Admin = () => {
     }
   };
 
+  // Submission detail modal
+  const SubmissionDetail = ({ submission, onClose }: { submission: Submission; onClose: () => void }) => (
+    <div className="fixed inset-0 z-50 flex items-start justify-center bg-black/40 overflow-y-auto py-8 px-4">
+      <div className="bg-background rounded-xl border border-border shadow-2xl w-full max-w-2xl">
+        <div className="flex items-center justify-between px-6 py-4 border-b border-border">
+          <div>
+            <h2 className="font-serif text-lg text-foreground">
+              {submission.company_name || "Unnamed Submission"}
+            </h2>
+            <p className="text-xs text-muted-foreground mt-0.5">
+              {submission.industry || "—"} · {submission.num_employees || "—"} employees · {format(new Date(submission.created_at), "MMM d, yyyy")}
+            </p>
+          </div>
+          <button onClick={onClose} className="text-muted-foreground hover:text-foreground p-1 rounded-md hover:bg-muted/50">
+            <X className="w-5 h-5" />
+          </button>
+        </div>
+        <div className="px-6 py-4 space-y-6 max-h-[70vh] overflow-y-auto">
+          {sections.map((section) => {
+            const sectionFields = section.fields.filter((f) => {
+              const val = submission.intake_data[f.id as keyof IntakeFormData];
+              return val && (Array.isArray(val) ? val.length > 0 : String(val).trim());
+            });
+            if (sectionFields.length === 0) return null;
+            return (
+              <div key={section.title} className="space-y-3">
+                <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider border-b border-border pb-1">
+                  {section.title}
+                </h3>
+                {sectionFields.map((f) => {
+                  const val = submission.intake_data[f.id as keyof IntakeFormData];
+                  const display = Array.isArray(val) ? val.join(", ") : String(val);
+                  return (
+                    <div key={f.id}>
+                      <p className="text-xs text-muted-foreground mb-0.5">{f.label}</p>
+                      <p className="text-sm text-foreground whitespace-pre-wrap">{display}</p>
+                    </div>
+                  );
+                })}
+              </div>
+            );
+          })}
+        </div>
+        <div className="flex items-center gap-2 px-6 py-4 border-t border-border">
+          {submission.plan_file_path && (
+            <Button size="sm" variant="outline" onClick={() => handleDownload(submission)} disabled={downloadingId === submission.id}>
+              {downloadingId === submission.id ? <Loader2 className="w-3 h-3 animate-spin mr-1.5" /> : <Download className="w-3 h-3 mr-1.5" />}
+              Download Plan
+            </Button>
+          )}
+          <Button size="sm" variant="ghost" onClick={() => handleRegenerate(submission)} disabled={regeneratingId === submission.id}>
+            {regeneratingId === submission.id ? <Loader2 className="w-3 h-3 animate-spin mr-1.5" /> : <RefreshCw className="w-3 h-3 mr-1.5" />}
+            Regenerate
+          </Button>
+        </div>
+      </div>
+    </div>
+  );
+
   if (!isAdmin) return null;
 
   return (
     <div className="min-h-screen hero-gradient">
+      {detailSubmission && (
+        <SubmissionDetail submission={detailSubmission} onClose={() => setDetailSubmission(null)} />
+      )}
       {/* Header */}
       <header className="border-b border-border/50 bg-background/60 backdrop-blur-sm sticky top-0 z-10">
         <div className="max-w-5xl mx-auto px-6 py-4 flex items-center justify-between">
@@ -374,57 +454,87 @@ const Admin = () => {
                   </div>
 
                   {codes.map((c) => (
-                    <div
-                      key={c.id}
-                      className="grid grid-cols-[1fr_1fr_4rem_5rem_5rem_6rem] gap-4 px-5 py-4 border-b border-border/50 last:border-0 items-center hover:bg-secondary/20 transition-colors"
-                    >
-                      <span className="font-mono text-sm font-semibold tracking-widest text-foreground">
-                        {c.code}
-                      </span>
-                      <span className="text-sm text-muted-foreground truncate">
-                        {c.label ?? <span className="italic opacity-40">—</span>}
-                      </span>
-                      <span className="text-sm text-center text-muted-foreground">{c.use_count}</span>
-                      <div className="flex justify-center">
-                        <Badge
-                          variant={c.is_active ? "default" : "secondary"}
-                          className={c.is_active ? "bg-green-500/20 text-green-400 border-green-500/30 hover:bg-green-500/20" : ""}
-                        >
-                          {c.is_active ? "Active" : "Inactive"}
-                        </Badge>
-                      </div>
-                      <span className="text-xs text-center text-muted-foreground">
-                        {format(new Date(c.created_at), "MMM d")}
-                      </span>
-                      <div className="flex items-center justify-center gap-1.5">
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          className="w-7 h-7 text-muted-foreground hover:text-foreground"
-                          title="Copy code"
-                          onClick={() => copyToClipboard(c.code, c.id)}
-                        >
-                          {copiedId === c.id ? (
-                            <Check className="w-3.5 h-3.5 text-green-500" />
-                          ) : (
-                            <Copy className="w-3.5 h-3.5" />
+                    <div key={c.id} className="border-b border-border/50 last:border-0">
+                      <div className="grid grid-cols-[1fr_1fr_4rem_5rem_5rem_6rem] gap-4 px-5 py-4 items-center hover:bg-secondary/20 transition-colors">
+                        <span className="font-mono text-sm font-semibold tracking-widest text-foreground">
+                          {c.code}
+                        </span>
+                        <span className="text-sm text-muted-foreground truncate">
+                          {c.org_name || c.label || <span className="italic opacity-40">—</span>}
+                        </span>
+                        <div className="flex items-center justify-center gap-1">
+                          <span className="text-sm text-muted-foreground">{c.use_count}</span>
+                          {(c.org_users?.length ?? 0) > 0 && (
+                            <button
+                              onClick={() => setExpandedCodeId(expandedCodeId === c.id ? null : c.id)}
+                              className="text-primary/60 hover:text-primary transition-colors"
+                              title="View users"
+                            >
+                              <Users className="w-3 h-3" />
+                            </button>
                           )}
-                        </Button>
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          className="w-7 h-7 text-muted-foreground hover:text-foreground"
-                          title={c.is_active ? "Deactivate" : "Activate"}
-                          disabled={toggleMutation.isPending}
-                          onClick={() => toggleMutation.mutate({ id: c.id, is_active: c.is_active })}
-                        >
-                          {c.is_active ? (
-                            <ToggleRight className="w-4 h-4 text-green-500" />
-                          ) : (
-                            <ToggleLeft className="w-4 h-4" />
-                          )}
-                        </Button>
+                        </div>
+                        <div className="flex justify-center">
+                          <Badge
+                            variant={c.is_active ? "default" : "secondary"}
+                            className={c.is_active ? "bg-green-500/20 text-green-400 border-green-500/30 hover:bg-green-500/20" : ""}
+                          >
+                            {c.is_active ? "Active" : "Inactive"}
+                          </Badge>
+                        </div>
+                        <span className="text-xs text-center text-muted-foreground">
+                          {format(new Date(c.created_at), "MMM d")}
+                        </span>
+                        <div className="flex items-center justify-center gap-1.5">
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="w-7 h-7 text-muted-foreground hover:text-foreground"
+                            title="Copy code"
+                            onClick={() => copyToClipboard(c.code, c.id)}
+                          >
+                            {copiedId === c.id ? (
+                              <Check className="w-3.5 h-3.5 text-green-500" />
+                            ) : (
+                              <Copy className="w-3.5 h-3.5" />
+                            )}
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="w-7 h-7 text-muted-foreground hover:text-foreground"
+                            title={c.is_active ? "Deactivate" : "Activate"}
+                            disabled={toggleMutation.isPending}
+                            onClick={() => toggleMutation.mutate({ id: c.id, is_active: c.is_active })}
+                          >
+                            {c.is_active ? (
+                              <ToggleRight className="w-4 h-4 text-green-500" />
+                            ) : (
+                              <ToggleLeft className="w-4 h-4" />
+                            )}
+                          </Button>
+                        </div>
                       </div>
+                      {/* Expandable org users */}
+                      {expandedCodeId === c.id && c.org_users && c.org_users.length > 0 && (
+                        <div className="px-5 pb-3 bg-secondary/20">
+                          <p className="text-xs font-medium text-muted-foreground mb-2">
+                            Team Members ({c.org_users.length})
+                          </p>
+                          <div className="space-y-1">
+                            {c.org_users.map((u) => (
+                              <div key={u.id} className="flex items-center gap-3 text-xs text-foreground/80">
+                                <div className="w-5 h-5 rounded-full bg-primary/20 flex items-center justify-center text-primary font-semibold text-xs shrink-0">
+                                  {u.name.charAt(0).toUpperCase()}
+                                </div>
+                                <span className="font-medium">{u.name}</span>
+                                <span className="text-muted-foreground">{u.email}</span>
+                                <span className="text-muted-foreground ml-auto">{format(new Date(u.created_at), "MMM d")}</span>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      )}
                     </div>
                   ))}
                 </div>
@@ -477,7 +587,16 @@ const Admin = () => {
                     <span className="text-xs text-muted-foreground">
                       {format(new Date(s.created_at), "MMM d, yyyy")}
                     </span>
-                    <div className="flex items-center justify-center gap-2">
+                    <div className="flex items-center justify-center gap-1.5 flex-wrap">
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="h-7 text-xs px-2 gap-1"
+                        onClick={() => setDetailSubmission(s)}
+                      >
+                        <Eye className="w-3 h-3" />
+                        View
+                      </Button>
                       {s.plan_file_path ? (
                         <Button
                           variant="outline"
@@ -491,12 +610,12 @@ const Admin = () => {
                           ) : (
                             <Download className="w-3 h-3" />
                           )}
-                          Download
+                          Plan
                         </Button>
                       ) : (
                         <span className="flex items-center gap-1 text-xs text-muted-foreground/60 italic">
                           <FileX className="w-3 h-3" />
-                          Plan Unavailable
+                          No plan
                         </span>
                       )}
                       <Button

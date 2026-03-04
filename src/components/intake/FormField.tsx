@@ -1,12 +1,13 @@
-import { useState } from "react";
+import { useState, useRef, useEffect, useCallback } from "react";
 import { FieldConfig } from "@/config/intake-sections";
 import { useIntakeStore, IntakeFormData } from "@/stores/intake-store";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Collapsible, CollapsibleTrigger, CollapsibleContent } from "@/components/ui/collapsible";
-import { ChevronDown, ChevronUp } from "lucide-react";
+import { ChevronDown, ChevronUp, Sparkles } from "lucide-react";
 import { cn } from "@/lib/utils";
+import FieldNotes from "./FieldNotes";
 
 interface FormFieldProps {
   field: FieldConfig;
@@ -17,7 +18,22 @@ interface FormFieldProps {
 const FormField = ({ field, error, questionNumber }: FormFieldProps) => {
   const store = useIntakeStore();
   const value = store[field.id as keyof IntakeFormData];
+  const submissionId = store.submissionId;
+  const isAndreaEdited = store.andreaEditedFields.has(field.id);
   const [examplesOpen, setExamplesOpen] = useState(false);
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
+
+  const autoResize = useCallback((el: HTMLTextAreaElement | null) => {
+    if (!el) return;
+    el.style.height = "auto";
+    el.style.height = Math.max(el.scrollHeight, 72) + "px";
+  }, []);
+
+  useEffect(() => {
+    if (field.type === "textarea") {
+      autoResize(textareaRef.current);
+    }
+  }, [value, field.type, autoResize]);
 
   // Check showIf condition
   const isConditional = !!field.showIf;
@@ -37,13 +53,22 @@ const FormField = ({ field, error, questionNumber }: FormFieldProps) => {
       "space-y-2.5",
       isConditional ? "animate-slide-down overflow-hidden" : "animate-fade-in"
     )}>
-      <Label className="text-sm font-medium text-card-foreground leading-relaxed">
-        {questionNumber != null && <span className="text-muted-foreground mr-1.5">{questionNumber}.</span>}
-        {field.label}
-        {field.required && <span className="text-destructive ml-1">*</span>}
-        {field.maxSelect && (
-          <span className="text-muted-foreground font-normal ml-1">(max {field.maxSelect})</span>
+      <Label className="text-sm font-medium text-card-foreground leading-relaxed flex items-center gap-2 flex-wrap">
+        <span>
+          {questionNumber != null && <span className="text-muted-foreground mr-1.5">{questionNumber}.</span>}
+          {field.label}
+          {field.required && <span className="text-destructive ml-1">*</span>}
+          {field.maxSelect && (
+            <span className="text-muted-foreground font-normal ml-1">(max {field.maxSelect})</span>
+          )}
+        </span>
+        {isAndreaEdited && (
+          <span className="inline-flex items-center gap-1 text-xs font-normal text-primary/70 bg-primary/8 px-1.5 py-0.5 rounded-full">
+            <Sparkles className="w-3 h-3" />
+            Andrea
+          </span>
         )}
+        <FieldNotes fieldId={field.id} submissionId={submissionId} />
       </Label>
 
       {field.helperText && (
@@ -85,9 +110,13 @@ const FormField = ({ field, error, questionNumber }: FormFieldProps) => {
 
       {field.type === "textarea" && (
         <Textarea
+          ref={textareaRef}
           value={value as string}
-          onChange={(e) => handleChange(e.target.value)}
-          rows={3}
+          onChange={(e) => {
+            handleChange(e.target.value);
+            autoResize(e.target);
+          }}
+          style={{ minHeight: "72px", overflow: "hidden" }}
           className={cn(
             "bg-card border-[hsl(var(--card-border))] text-card-foreground placeholder:text-muted-foreground focus:ring-primary resize-none",
             error && "border-destructive"

@@ -6,7 +6,7 @@ import type { ChatMessage } from "@/hooks/use-andrea-chat";
 interface AndreaChatMessagesProps {
   messages: ChatMessage[];
   appliedEdits: Set<string>;
-  onApplyEdit: (fieldId: string, value: string | string[], editKey: string) => void;
+  onApplyEdit: (fieldId: string, value: string | string[], editKey: string, mode: "replace" | "append") => void;
   isLoading: boolean;
 }
 
@@ -55,8 +55,8 @@ export default function AndreaChatMessages({
                       edit={edit}
                       editKey={editKey}
                       isApplied={appliedEdits.has(editKey)}
-                      onApply={() =>
-                        onApplyEdit(edit.fieldId, edit.suggestedValue, editKey)
+                      onApply={(mode) =>
+                        onApplyEdit(edit.fieldId, edit.suggestedValue, editKey, mode)
                       }
                     />
                   );

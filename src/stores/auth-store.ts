@@ -3,26 +3,56 @@ import type { User } from "@supabase/supabase-js";
 import { supabase } from "@/integrations/supabase/client";
 
 const ADMIN_EMAILS = ["coryk@smaiadvisors.com", "allim@smaiadvisors.com"];
-const ACCESS_CODE_KEY = "sm-access-code";
+const SESSION_KEY = "sm-session";
+
+interface OrgSession {
+  accessCode: string;
+  accessCodeId: string;
+  orgUserId: string;
+  userName: string;
+  userEmail: string;
+  orgName: string | null;
+  hasExistingSubmission: boolean;
+  hasPlan: boolean;
+}
 
 interface AuthState {
   adminUser: User | null;
   isAdmin: boolean;
-  accessCode: string | null;
+  // Org/user session (sessionStorage — clears on browser close)
+  session: OrgSession | null;
   hasAccess: boolean;
 
   setAdminUser: (user: User | null) => void;
   signInWithGoogle: () => Promise<void>;
   signOut: () => Promise<void>;
-  setAccessCode: (code: string) => void;
-  clearAccessCode: () => void;
-  checkStoredCode: () => void;
+  setOrgSession: (session: OrgSession) => void;
+  clearOrgSession: () => void;
+  hydrateSession: () => void;
+  updateSessionSubmissionState: (hasExistingSubmission: boolean, hasPlan: boolean) => void;
+}
+
+function saveSession(session: OrgSession) {
+  try {
+    sessionStorage.setItem(SESSION_KEY, JSON.stringify(session));
+  } catch {
+    // ignore
+  }
+}
+
+function loadSession(): OrgSession | null {
+  try {
+    const raw = sessionStorage.getItem(SESSION_KEY);
+    return raw ? JSON.parse(raw) : null;
+  } catch {
+    return null;
+  }
 }
 
 export const useAuthStore = create<AuthState>((set, get) => ({
   adminUser: null,
   isAdmin: false,
-  accessCode: null,
+  session: null,
   hasAccess: false,
 
   setAdminUser: (user) => {
@@ -30,7 +60,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     set({
       adminUser: user,
       isAdmin,
-      hasAccess: isAdmin || get().accessCode !== null,
+      hasAccess: isAdmin || get().session !== null,
     });
   },
 
@@ -43,29 +73,41 @@ export const useAuthStore = create<AuthState>((set, get) => ({
 
   signOut: async () => {
     await supabase.auth.signOut();
-    set({ adminUser: null, isAdmin: false, hasAccess: get().accessCode !== null });
-  },
-
-  setAccessCode: (code) => {
-    localStorage.setItem(ACCESS_CODE_KEY, code);
-    set({ accessCode: code, hasAccess: true });
-  },
-
-  clearAccessCode: () => {
-    localStorage.removeItem(ACCESS_CODE_KEY);
     set((state) => ({
-      accessCode: null,
+      adminUser: null,
+      isAdmin: false,
+      hasAccess: state.session !== null,
+    }));
+  },
+
+  setOrgSession: (session) => {
+    saveSession(session);
+    set({ session, hasAccess: true });
+  },
+
+  clearOrgSession: () => {
+    try { sessionStorage.removeItem(SESSION_KEY); } catch { /* ignore */ }
+    set((state) => ({
+      session: null,
       hasAccess: state.isAdmin,
     }));
   },
 
-  checkStoredCode: () => {
-    const stored = localStorage.getItem(ACCESS_CODE_KEY);
-    if (stored) {
+  hydrateSession: () => {
+    const session = loadSession();
+    if (session) {
       set((state) => ({
-        accessCode: stored,
+        session,
         hasAccess: true || state.isAdmin,
       }));
     }
+  },
+
+  updateSessionSubmissionState: (hasExistingSubmission, hasPlan) => {
+    const current = get().session;
+    if (!current) return;
+    const updated = { ...current, hasExistingSubmission, hasPlan };
+    saveSession(updated);
+    set({ session: updated });
   },
 }));
