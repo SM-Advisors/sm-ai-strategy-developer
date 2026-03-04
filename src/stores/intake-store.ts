@@ -172,8 +172,36 @@ export const useIntakeStore = create<IntakeStore>()((set, get) => ({
         const merged = { ...defaultFormData, ...(intake_data as Partial<IntakeFormData>) };
         set({ submissionId: id, ...merged });
       } else {
-        // No existing submission for this org — start fresh with defaults
-        // (defaults were already set at the top of this function)
+        // No existing submission for this code — check localStorage for legacy data (one-time migration)
+        try {
+          const legacyRaw = localStorage.getItem("intake-form-storage");
+          if (legacyRaw) {
+            const legacy = JSON.parse(legacyRaw);
+            if (legacy?.state) {
+              const formFields: Record<string, unknown> = {};
+              for (const key of formDataKeys) {
+                if (legacy.state[key] !== undefined) {
+                  formFields[key] = legacy.state[key];
+                }
+              }
+              set(formFields as Partial<IntakeStore>);
+              // Save to server linked to this access code
+              const { useAuthStore } = require("@/stores/auth-store");
+              const session = useAuthStore.getState().session;
+              if (session?.accessCodeId) {
+                supabase.functions.invoke("save-intake", {
+                  body: {
+                    accessCodeId: session.accessCodeId,
+                    orgUserId: session.orgUserId,
+                    fullIntakeData: formFields,
+                  },
+                }).catch(console.warn);
+              }
+              // Clear legacy storage so it doesn't bleed into other orgs
+              localStorage.removeItem("intake-form-storage");
+            }
+          }
+        } catch { /* ignore legacy parse errors */ }
       }
     } catch (err) {
       console.warn("Failed to load intake from server:", err);
