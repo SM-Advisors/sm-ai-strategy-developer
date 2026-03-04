@@ -70,7 +70,7 @@ function generateCode(): string {
 const Admin = () => {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
-  const { isAdmin, adminUser } = useAuthStore();
+  const { isAdmin, adminUser, setOrgSession } = useAuthStore();
   const [labelInput, setLabelInput] = useState("");
   const [newCode, setNewCode] = useState<string | null>(null);
   const [copiedId, setCopiedId] = useState<string | null>(null);
@@ -113,7 +113,7 @@ const Admin = () => {
       if (error) throw error;
       return data as Submission[];
     },
-    enabled: isAdmin && activeTab === "submissions",
+    enabled: isAdmin,
   });
 
   // Generate new code mutation
@@ -155,6 +155,25 @@ const Admin = () => {
     setCopiedId(id);
     toast.success("Code copied to clipboard");
     setTimeout(() => setCopiedId(null), 2000);
+  };
+
+  const handleEditAsOrg = async (code: AccessCode) => {
+    // Check if there's an existing submission for this code
+    const submission = submissions.find((s) => s.access_code_id === code.id);
+    // Find an admin org_user for this code, or use admin info
+    const adminOrgUser = code.org_users?.[0];
+    
+    setOrgSession({
+      accessCode: code.code,
+      accessCodeId: code.id,
+      orgUserId: adminOrgUser?.id || "admin",
+      userName: adminUser?.email?.split("@")[0] || "Admin",
+      userEmail: adminUser?.email || "",
+      orgName: code.org_name || code.label || null,
+      hasExistingSubmission: !!submission,
+      hasPlan: !!(submission?.plan_file_path),
+    });
+    navigate("/intake");
   };
 
   const handleDownload = async (submission: Submission) => {
@@ -486,6 +505,15 @@ const Admin = () => {
                           {format(new Date(c.created_at), "MMM d")}
                         </span>
                         <div className="flex items-center justify-center gap-1.5">
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="w-7 h-7 text-muted-foreground hover:text-foreground"
+                            title="Edit intake as this org"
+                            onClick={() => handleEditAsOrg(c)}
+                          >
+                            <ClipboardList className="w-3.5 h-3.5" />
+                          </Button>
                           <Button
                             variant="ghost"
                             size="icon"
