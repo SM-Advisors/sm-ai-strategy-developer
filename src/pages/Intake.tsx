@@ -1,13 +1,14 @@
 import { useState, useMemo, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useIntakeStore, IntakeFormData } from "@/stores/intake-store";
+import { useAuthStore } from "@/stores/auth-store";
 import { sections } from "@/config/intake-sections";
 import ProgressBar from "@/components/intake/ProgressBar";
 import FormField from "@/components/intake/FormField";
 import ReviewStep from "@/components/intake/ReviewStep";
 import GeneratingOverlay from "@/components/intake/GeneratingOverlay";
 import { Button } from "@/components/ui/button";
-import { ArrowLeft, ArrowRight, Sparkles, FileText } from "lucide-react";
+import { ArrowLeft, ArrowRight, Sparkles, FileText, Loader2 } from "lucide-react";
 import { useGeneratePlan } from "@/hooks/use-generate-plan";
 import AndreaChat from "@/components/andrea/AndreaChat";
 
@@ -16,7 +17,8 @@ const TOTAL_STEPS = sections.length + 1; // sections + review
 const Intake = () => {
   const navigate = useNavigate();
   const store = useIntakeStore();
-  const { currentStep, setCurrentStep, isGenerating, generatedPlan } = store;
+  const { currentStep, setCurrentStep, isGenerating, generatedPlan, isLoadingFromServer, loadFromServer } = store;
+  const { session } = useAuthStore();
   const [errors, setErrors] = useState<Set<string>>(new Set());
   const { generate } = useGeneratePlan();
 
@@ -24,6 +26,13 @@ const Intake = () => {
   const section = isReviewStep ? null : sections[currentStep];
   const isLastFormStep = currentStep === sections.length - 1;
   const isFirstStep = currentStep === 0;
+
+  // Load shared form data from server on mount
+  useEffect(() => {
+    if (session?.accessCodeId) {
+      loadFromServer(session.accessCodeId);
+    }
+  }, [session?.accessCodeId]);
 
   useEffect(() => {
     document.title = isReviewStep
@@ -83,6 +92,17 @@ const Intake = () => {
 
   if (isGenerating) {
     return <GeneratingOverlay />;
+  }
+
+  if (isLoadingFromServer) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <div className="flex items-center gap-3 text-muted-foreground">
+          <Loader2 className="w-5 h-5 animate-spin" />
+          <span className="text-sm">Loading your assessment...</span>
+        </div>
+      </div>
+    );
   }
 
   return (

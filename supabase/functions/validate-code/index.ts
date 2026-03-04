@@ -20,7 +20,8 @@ serve(async (req) => {
       throw new Error("Supabase environment variables not configured");
     }
 
-    const { code } = await req.json();
+    const body = await req.json();
+    const { mode, code, name, email } = body;
 
     if (!code || typeof code !== "string") {
       return new Response(
@@ -29,40 +30,111 @@ serve(async (req) => {
       );
     }
 
-    // Use service role to bypass RLS for validation
     const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
 
     // Look up the code
-    const { data, error } = await supabase
+    const { data: codeRow, error: codeError } = await supabase
       .from("access_codes")
-      .select("id, code, label, is_active, use_count")
+      .select("id, code, label, org_name, is_active, use_count")
       .eq("code", code.trim().toUpperCase())
       .single();
 
-    if (error || !data) {
+    if (codeError || !codeRow) {
       return new Response(
         JSON.stringify({ valid: false }),
         { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
 
-    if (!data.is_active) {
+    if (!codeRow.is_active) {
       return new Response(
         JSON.stringify({ valid: false }),
         { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
 
-    // Increment use_count
-    await supabase
-      .from("access_codes")
-      .update({ use_count: data.use_count + 1 })
-      .eq("id", data.id);
+    // Mode "check": just validate the code exists, return org info
+    if (!mode || mode === "check") {
+      return new Response(
+        JSON.stringify({
+          valid: true,
+          codeId: codeRow.id,
+          orgName: codeRow.org_name ?? codeRow.label ?? null,
+        }),
+        { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
+    // Mode "login": register/identify user and return session data
+    if (mode === "login") {
+      if (!name || !email || typeof name !== "string" || typeof email !== "string") {
+        return new Response(
+          JSON.stringify({ valid: false, error: "Name and email are required" }),
+          { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+
+      const normalizedEmail = email.trim().toLowerCase();
+
+      // Upsert org_user: find existing or create new
+      const { data: existingUser } = await supabase
+        .from("org_users")
+        .select("id, name, email")
+        .eq("access_code_id", codeRow.id)
+        .eq("email", normalizedEmail)
+        .single();
+
+      let orgUser = existingUser;
+      let isNewUser = false;
+
+      if (!orgUser) {
+        const { data: newUser, error: insertError } = await supabase
+          .from("org_users")
+          .insert({ access_code_id: codeRow.id, name: name.trim(), email: normalizedEmail })
+          .select("id, name, email")
+          .single();
+
+        if (insertError || !newUser) {
+          throw new Error("Failed to register user");
+        }
+        orgUser = newUser;
+        isNewUser = true;
+      }
+
+      // Check if this org already has a submission
+      const { data: existingSubmission } = await supabase
+        .from("submissions")
+        .select("id, plan_file_path")
+        .eq("access_code_id", codeRow.id)
+        .maybeSingle();
+
+      // Increment use_count on code
+      await supabase
+        .from("access_codes")
+        .update({ use_count: codeRow.use_count + 1 })
+        .eq("id", codeRow.id);
+
+      return new Response(
+        JSON.stringify({
+          valid: true,
+          codeId: codeRow.id,
+          userId: orgUser.id,
+          userName: orgUser.name,
+          userEmail: orgUser.email,
+          orgName: codeRow.org_name ?? codeRow.label ?? null,
+          isNewUser,
+          hasExistingSubmission: !!existingSubmission,
+          hasPlan: !!(existingSubmission?.plan_file_path),
+        }),
+        { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
 
     return new Response(
-      JSON.stringify({ valid: true, label: data.label ?? null }),
-      { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      JSON.stringify({ valid: false, error: "Unknown mode" }),
+      { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
+
   } catch (e) {
     console.error("validate-code error:", e);
     return new Response(

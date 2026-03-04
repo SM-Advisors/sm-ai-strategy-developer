@@ -160,9 +160,18 @@ export function useAndreaChat() {
 
   /** Apply a field edit suggestion to the intake form */
   const applyFieldEdit = useCallback(
-    (fieldId: string, value: string | string[], editKey: string) => {
+    (fieldId: string, value: string | string[], editKey: string, mode: "replace" | "append" = "replace") => {
       const store = useIntakeStore.getState();
-      store.setField(fieldId as keyof IntakeFormData, value as any);
+      const currentValue = store[fieldId as keyof IntakeFormData];
+
+      let finalValue: string | string[];
+      if (mode === "append" && typeof value === "string" && typeof currentValue === "string" && currentValue.trim()) {
+        finalValue = `${currentValue.trim()}\n\n— Andrea's suggestion —\n${value}`;
+      } else {
+        finalValue = value;
+      }
+
+      store.setField(fieldId as keyof IntakeFormData, finalValue as any, { isAndreaSuggestion: true });
       setAppliedEdits((prev) => new Set([...prev, editKey]));
     },
     []

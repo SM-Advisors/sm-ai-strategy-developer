@@ -8,7 +8,7 @@ interface AndreaEditSuggestionProps {
   edit: FieldEdit;
   editKey: string;
   isApplied: boolean;
-  onApply: () => void;
+  onApply: (mode: "replace" | "append") => void;
 }
 
 export default function AndreaEditSuggestion({
@@ -17,18 +17,27 @@ export default function AndreaEditSuggestion({
   isApplied,
   onApply,
 }: AndreaEditSuggestionProps) {
-  // Read the current value of the field from the store
   const currentValue = useIntakeStore(
     (s) => s[edit.fieldId as keyof IntakeFormData]
   );
 
-  // Determine which section this field belongs to
   const fieldSectionIndex = sections.findIndex((s) =>
     s.fields.some((f) => f.id === edit.fieldId)
   );
+  const fieldConfig = sections
+    .flatMap((s) => s.fields)
+    .find((f) => f.id === edit.fieldId);
+
   const currentStep = useIntakeStore((s) => s.currentStep);
   const isOtherSection =
     fieldSectionIndex !== -1 && fieldSectionIndex !== currentStep;
+
+  const isArrayField = fieldConfig?.type === "checkbox";
+  const hasExistingText =
+    !isArrayField &&
+    !!currentValue &&
+    typeof currentValue === "string" &&
+    currentValue.trim().length > 0;
 
   const displayCurrent = currentValue
     ? Array.isArray(currentValue)
@@ -72,14 +81,24 @@ export default function AndreaEditSuggestion({
         </p>
       )}
 
-      {/* Apply / Applied button */}
+      {/* Action buttons */}
       {isApplied ? (
         <div className="flex items-center gap-1.5 text-xs font-medium text-green-600">
           <Check className="h-3.5 w-3.5" />
           Applied
         </div>
+      ) : hasExistingText ? (
+        <div className="flex items-center gap-2">
+          <Button size="sm" onClick={() => onApply("replace")} variant="outline" className="h-7 text-xs gap-1.5">
+            Replace
+          </Button>
+          <Button size="sm" onClick={() => onApply("append")} className="h-7 text-xs gap-1.5">
+            <Check className="h-3 w-3" />
+            Append
+          </Button>
+        </div>
       ) : (
-        <Button size="sm" onClick={onApply} className="h-7 text-xs gap-1.5">
+        <Button size="sm" onClick={() => onApply("replace")} className="h-7 text-xs gap-1.5">
           <Check className="h-3 w-3" />
           Apply
         </Button>

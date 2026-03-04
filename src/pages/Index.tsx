@@ -11,72 +11,107 @@ const STEPS = [
   {
     icon: ClipboardList,
     title: "Complete the Assessment",
-    desc: "Answer questions about your organization, goals, and readiness. Takes about 10 minutes.",
+    desc: "Answer questions about your organization, goals, and readiness.",
   },
   {
     icon: Brain,
     title: "AI Analyzes Your Organization",
-    desc: "Our AI synthesizes your responses into a comprehensive, personalized strategic plan.",
+    desc: "Our AI synthesizes your responses into a comprehensive, personalized plan.",
   },
   {
     icon: FileText,
     title: "Receive Your Strategic Plan",
-    desc: "Get a board-ready AI strategy document with roadmap, use cases, and governance framework.",
+    desc: "Get a board-ready AI strategy with roadmap, use cases, and governance framework.",
   },
 ];
 
 const Index = () => {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
-  const { hasAccess } = useAuthStore();
+  const { hasAccess, session, isAdmin } = useAuthStore();
 
   const redirected = searchParams.get("redirect") === "true";
+  const hasExisting = session?.hasExistingSubmission || false;
+  const hasPlan = session?.hasPlan || false;
 
   useEffect(() => {
     document.title = "AI Strategic Planner — Institutional-Grade AI Strategy";
   }, []);
 
   return (
-    <div className="min-h-screen hero-gradient flex flex-col">
+    <div className="h-screen hero-gradient flex flex-col overflow-hidden">
       {/* Nav */}
-      <nav className="w-full px-6 py-4 bg-[hsl(210,20%,95%)]">
+      <nav className="w-full px-6 py-3 bg-[hsl(210,20%,95%)] shrink-0">
         <div className="flex items-center justify-between max-w-6xl mx-auto">
-          <img src={smLogo} alt="SM Advisors" className="h-8 sm:h-10" />
+          <img src={smLogo} alt="SM Advisors" className="h-7 sm:h-9" />
           <AdminBar />
         </div>
       </nav>
 
-      {/* Hero */}
-      <main className="flex-1 flex flex-col items-center justify-center px-6 pb-10 pt-8">
-        <div className="max-w-3xl text-center space-y-5">
-          <h1 className="text-4xl sm:text-5xl lg:text-6xl font-serif leading-tight tracking-tight">
-            AI Strategic Planner
-          </h1>
+      {/* Main content — centered, no scroll */}
+      <main className="flex-1 flex flex-col items-center justify-center px-6 py-4 min-h-0">
+        <div className="w-full max-w-4xl flex flex-col items-center gap-4">
 
-          <p className="text-lg sm:text-xl text-foreground/70 max-w-2xl mx-auto leading-relaxed">
-            Build your institutional-grade AI strategy in minutes.
-          </p>
+          {/* Heading + description */}
+          <div className="text-center space-y-1.5">
+            <h1 className="text-3xl sm:text-4xl font-serif leading-tight tracking-tight">
+              AI Strategic Planner
+            </h1>
+            <p className="text-sm sm:text-base text-muted-foreground max-w-xl mx-auto leading-relaxed">
+              Build your institutional-grade AI strategy in minutes. Complete the intake below — your responses are analyzed by AI to produce a customized plan for your CEO, C-suite, and Board.
+            </p>
+          </div>
 
-          <p className="text-sm text-muted-foreground max-w-xl mx-auto leading-relaxed">
-            Complete the intake assessment below. Your responses will be analyzed by AI to produce a customized strategic plan built for your CEO, C-suite, and Board.
-          </p>
+          {/* Feature pills */}
+          <div className="flex flex-wrap items-center justify-center gap-5 text-muted-foreground text-xs">
+            <div className="flex items-center gap-1.5">
+              <Shield className="w-3.5 h-3.5 text-primary" />
+              <span>Enterprise Governance</span>
+            </div>
+            <div className="flex items-center gap-1.5">
+              <BarChart3 className="w-3.5 h-3.5 text-primary" />
+              <span>ROI-Focused</span>
+            </div>
+            <div className="flex items-center gap-1.5">
+              <Lightbulb className="w-3.5 h-3.5 text-primary" />
+              <span>Board-Ready Output</span>
+            </div>
+          </div>
 
           {/* CTA — conditional on access */}
-          <div className="pt-2">
+          <div className="flex flex-col items-center gap-2">
             {hasAccess ? (
-              <Button
-                variant="hero"
-                size="lg"
-                onClick={() => navigate("/intake")}
-                className="text-base px-10 py-6 rounded-lg"
-              >
-                Begin Assessment
-                <ArrowRight className="ml-2 w-5 h-5" />
-              </Button>
-            ) : (
-              <div className="space-y-3">
-                {redirected && (
+              <>
+                <Button
+                  variant="hero"
+                  size="lg"
+                  onClick={() => navigate("/intake")}
+                  className="text-base px-10 py-5 rounded-lg"
+                >
+                  {hasExisting ? "Continue Assessment" : "Begin Assessment"}
+                  <ArrowRight className="ml-2 w-5 h-5" />
+                </Button>
+                {hasPlan && (
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => navigate("/plan")}
+                    className="text-xs"
+                  >
+                    View Your Strategic Plan
+                  </Button>
+                )}
+                {session && (
                   <p className="text-xs text-muted-foreground">
+                    Signed in as {session.userName}
+                    {session.orgName ? ` · ${session.orgName}` : ""}
+                  </p>
+                )}
+              </>
+            ) : (
+              <div className="space-y-2">
+                {redirected && (
+                  <p className="text-xs text-muted-foreground text-center">
                     An access code is required to use this platform.
                   </p>
                 )}
@@ -85,51 +120,35 @@ const Index = () => {
             )}
           </div>
 
-          {/* Feature pills */}
-          <div className="flex flex-wrap items-center justify-center gap-6 pt-2 text-muted-foreground text-sm">
-            <div className="flex items-center gap-2">
-              <Shield className="w-4 h-4 text-primary" />
-              <span>Enterprise Governance</span>
-            </div>
-            <div className="flex items-center gap-2">
-              <BarChart3 className="w-4 h-4 text-primary" />
-              <span>ROI-Focused</span>
-            </div>
-            <div className="flex items-center gap-2">
-              <Lightbulb className="w-4 h-4 text-primary" />
-              <span>Board-Ready Output</span>
+          {/* How it works */}
+          <div className="w-full mt-1">
+            <h2 className="font-serif text-lg sm:text-xl text-center mb-3 text-foreground/80">
+              How It Works
+            </h2>
+            <div className="grid grid-cols-3 gap-4">
+              {STEPS.map((step, i) => (
+                <div
+                  key={step.title}
+                  className="relative bg-secondary/50 border border-border rounded-xl p-4 text-center space-y-2"
+                >
+                  <div className="mx-auto w-9 h-9 rounded-full bg-primary/10 flex items-center justify-center">
+                    <step.icon className="w-4 h-4 text-primary" />
+                  </div>
+                  <div className="absolute -top-2.5 left-1/2 -translate-x-1/2 w-5 h-5 rounded-full bg-primary text-primary-foreground text-xs font-bold flex items-center justify-center">
+                    {i + 1}
+                  </div>
+                  <h3 className="font-serif text-sm text-foreground">{step.title}</h3>
+                  <p className="text-xs text-muted-foreground leading-relaxed">{step.desc}</p>
+                </div>
+              ))}
             </div>
           </div>
-        </div>
 
-        {/* How it works */}
-        <div className="w-full max-w-4xl mt-14 sm:mt-20">
-          <h2 className="font-serif text-2xl sm:text-3xl text-center mb-12">
-            How It Works
-          </h2>
-
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-6 sm:gap-8">
-            {STEPS.map((step, i) => (
-              <div
-                key={step.title}
-                className="relative bg-secondary/50 border border-border rounded-xl p-6 text-center space-y-4"
-              >
-                <div className="mx-auto w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center">
-                  <step.icon className="w-5 h-5 text-primary" />
-                </div>
-                <div className="absolute -top-3 left-1/2 -translate-x-1/2 w-6 h-6 rounded-full bg-primary text-primary-foreground text-xs font-bold flex items-center justify-center">
-                  {i + 1}
-                </div>
-                <h3 className="font-serif text-lg text-foreground">{step.title}</h3>
-                <p className="text-xs text-muted-foreground leading-relaxed">{step.desc}</p>
-              </div>
-            ))}
-          </div>
         </div>
       </main>
 
       {/* Footer */}
-      <footer className="w-full py-4 bg-[hsl(210,20%,95%)]" />
+      <footer className="w-full py-2 bg-[hsl(210,20%,95%)] shrink-0" />
     </div>
   );
 };
