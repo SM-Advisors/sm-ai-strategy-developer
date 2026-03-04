@@ -21,6 +21,7 @@ export type Database = {
           id: string
           is_active: boolean
           label: string | null
+          org_name: string | null
           use_count: number
         }
         Insert: {
@@ -29,6 +30,7 @@ export type Database = {
           id?: string
           is_active?: boolean
           label?: string | null
+          org_name?: string | null
           use_count?: number
         }
         Update: {
@@ -37,39 +39,189 @@ export type Database = {
           id?: string
           is_active?: boolean
           label?: string | null
+          org_name?: string | null
           use_count?: number
         }
         Relationships: []
       }
+      field_edit_log: {
+        Row: {
+          created_at: string
+          edited_by: string | null
+          edited_by_andrea: boolean
+          field_id: string
+          id: string
+          new_value: string | null
+          old_value: string | null
+          submission_id: string
+        }
+        Insert: {
+          created_at?: string
+          edited_by?: string | null
+          edited_by_andrea?: boolean
+          field_id: string
+          id?: string
+          new_value?: string | null
+          old_value?: string | null
+          submission_id: string
+        }
+        Update: {
+          created_at?: string
+          edited_by?: string | null
+          edited_by_andrea?: boolean
+          field_id?: string
+          id?: string
+          new_value?: string | null
+          old_value?: string | null
+          submission_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "field_edit_log_edited_by_fkey"
+            columns: ["edited_by"]
+            isOneToOne: false
+            referencedRelation: "org_users"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "field_edit_log_submission_id_fkey"
+            columns: ["submission_id"]
+            isOneToOne: false
+            referencedRelation: "submissions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      field_notes: {
+        Row: {
+          created_at: string
+          field_id: string
+          id: string
+          note_text: string
+          org_user_id: string
+          submission_id: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          field_id: string
+          id?: string
+          note_text: string
+          org_user_id: string
+          submission_id: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          field_id?: string
+          id?: string
+          note_text?: string
+          org_user_id?: string
+          submission_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "field_notes_org_user_id_fkey"
+            columns: ["org_user_id"]
+            isOneToOne: false
+            referencedRelation: "org_users"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "field_notes_submission_id_fkey"
+            columns: ["submission_id"]
+            isOneToOne: false
+            referencedRelation: "submissions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      org_users: {
+        Row: {
+          access_code_id: string
+          created_at: string
+          email: string
+          id: string
+          name: string
+        }
+        Insert: {
+          access_code_id: string
+          created_at?: string
+          email: string
+          id?: string
+          name: string
+        }
+        Update: {
+          access_code_id?: string
+          created_at?: string
+          email?: string
+          id?: string
+          name?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "org_users_access_code_id_fkey"
+            columns: ["access_code_id"]
+            isOneToOne: false
+            referencedRelation: "access_codes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       submissions: {
         Row: {
+          access_code_id: string | null
           company_name: string | null
           created_at: string
           id: string
           industry: string | null
           intake_data: Json
+          last_edited_at: string | null
+          last_edited_by: string | null
           num_employees: string | null
           plan_file_path: string | null
         }
         Insert: {
+          access_code_id?: string | null
           company_name?: string | null
           created_at?: string
           id?: string
           industry?: string | null
           intake_data: Json
+          last_edited_at?: string | null
+          last_edited_by?: string | null
           num_employees?: string | null
           plan_file_path?: string | null
         }
         Update: {
+          access_code_id?: string | null
           company_name?: string | null
           created_at?: string
           id?: string
           industry?: string | null
           intake_data?: Json
+          last_edited_at?: string | null
+          last_edited_by?: string | null
           num_employees?: string | null
           plan_file_path?: string | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "submissions_access_code_id_fkey"
+            columns: ["access_code_id"]
+            isOneToOne: false
+            referencedRelation: "access_codes"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "submissions_last_edited_by_fkey"
+            columns: ["last_edited_by"]
+            isOneToOne: false
+            referencedRelation: "org_users"
+            referencedColumns: ["id"]
+          },
+        ]
       }
     }
     Views: {
