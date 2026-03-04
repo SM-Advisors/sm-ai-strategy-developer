@@ -109,7 +109,9 @@ export default function AndreaScenarioChat({ scenarioResults }: AndreaScenarioCh
         <AndreaChatMessages
           messages={chatMessages}
           appliedEdits={new Set()}
+          dismissedEdits={new Set()}
           onApplyEdit={() => {}}
+          onDismissEdit={() => {}}
           isLoading={isLoading}
         />
 
