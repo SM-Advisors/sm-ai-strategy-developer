@@ -1,21 +1,25 @@
 import { useIntakeStore, IntakeFormData } from "@/stores/intake-store";
 import { sections } from "@/config/intake-sections";
 import { Button } from "@/components/ui/button";
-import { Check, Pencil } from "lucide-react";
+import { Check, Pencil, X } from "lucide-react";
 import type { FieldEdit } from "@/hooks/use-andrea-chat";
 
 interface AndreaEditSuggestionProps {
   edit: FieldEdit;
   editKey: string;
   isApplied: boolean;
+  isDismissed: boolean;
   onApply: (mode: "replace" | "append") => void;
+  onReject: () => void;
 }
 
 export default function AndreaEditSuggestion({
   edit,
   editKey,
   isApplied,
+  isDismissed,
   onApply,
+  onReject,
 }: AndreaEditSuggestionProps) {
   const currentValue = useIntakeStore(
     (s) => s[edit.fieldId as keyof IntakeFormData]
@@ -29,6 +33,9 @@ export default function AndreaEditSuggestion({
     .find((f) => f.id === edit.fieldId);
 
   const currentStep = useIntakeStore((s) => s.currentStep);
+
+  if (isDismissed) return null;
+
   const isOtherSection =
     fieldSectionIndex !== -1 && fieldSectionIndex !== currentStep;
 
@@ -89,19 +96,29 @@ export default function AndreaEditSuggestion({
         </div>
       ) : hasExistingText ? (
         <div className="flex items-center gap-2">
-          <Button size="sm" onClick={() => onApply("replace")} variant="outline" className="h-7 text-xs gap-1.5">
+          <Button size="sm" onClick={() => onApply("replace")} className="h-7 text-xs gap-1.5">
             Replace
           </Button>
-          <Button size="sm" onClick={() => onApply("append")} className="h-7 text-xs gap-1.5">
+          <Button size="sm" onClick={() => onApply("append")} variant="secondary" className="h-7 text-xs gap-1.5">
             <Check className="h-3 w-3" />
             Append
           </Button>
+          <Button size="sm" onClick={onReject} variant="ghost" className="h-7 text-xs gap-1.5 text-muted-foreground hover:text-foreground ml-auto">
+            <X className="h-3 w-3" />
+            Reject
+          </Button>
         </div>
       ) : (
-        <Button size="sm" onClick={() => onApply("replace")} className="h-7 text-xs gap-1.5">
-          <Check className="h-3 w-3" />
-          Apply
-        </Button>
+        <div className="flex items-center gap-2">
+          <Button size="sm" onClick={() => onApply("replace")} className="h-7 text-xs gap-1.5">
+            <Check className="h-3 w-3" />
+            Apply
+          </Button>
+          <Button size="sm" onClick={onReject} variant="ghost" className="h-7 text-xs gap-1.5 text-muted-foreground hover:text-foreground ml-auto">
+            <X className="h-3 w-3" />
+            Reject
+          </Button>
+        </div>
       )}
     </div>
   );

@@ -41,6 +41,7 @@ export function useAndreaChat() {
   const [messages, setMessages] = useState<ChatMessage[]>([WELCOME_MESSAGE]);
   const [isLoading, setIsLoading] = useState(false);
   const [appliedEdits, setAppliedEdits] = useState<Set<string>>(new Set());
+  const [dismissedEdits, setDismissedEdits] = useState<Set<string>>(new Set());
   const abortRef = useRef<AbortController | null>(null);
 
   /** Get the latest suggested prompts from the most recent assistant message */
@@ -158,6 +159,11 @@ export function useAndreaChat() {
     [isLoading, messages, buildContext]
   );
 
+  /** Dismiss a field edit suggestion without applying it */
+  const dismissFieldEdit = useCallback((editKey: string) => {
+    setDismissedEdits((prev) => new Set([...prev, editKey]));
+  }, []);
+
   /** Apply a field edit suggestion to the intake form */
   const applyFieldEdit = useCallback(
     (fieldId: string, value: string | string[], editKey: string, mode: "replace" | "append" = "replace") => {
@@ -182,7 +188,9 @@ export function useAndreaChat() {
     isLoading,
     latestPrompts,
     appliedEdits,
+    dismissedEdits,
     sendMessage,
     applyFieldEdit,
+    dismissFieldEdit,
   };
 }

@@ -17,8 +17,10 @@ export default function AndreaChat() {
     isLoading,
     latestPrompts,
     appliedEdits,
+    dismissedEdits,
     sendMessage,
     applyFieldEdit,
+    dismissFieldEdit,
   } = useAndreaChat();
 
   // Focus input when panel opens
@@ -94,7 +96,9 @@ export default function AndreaChat() {
         <AndreaChatMessages
           messages={messages}
           appliedEdits={appliedEdits}
+          dismissedEdits={dismissedEdits}
           onApplyEdit={applyFieldEdit}
+          onDismissEdit={dismissFieldEdit}
           isLoading={isLoading}
         />
 
