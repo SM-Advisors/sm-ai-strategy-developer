@@ -157,7 +157,8 @@ export const useIntakeStore = create<IntakeStore>()((set, get) => ({
   },
 
   loadFromServer: async (accessCodeId: string) => {
-    set({ isLoadingFromServer: true });
+    // Reset form data to defaults before loading to prevent cross-org data leakage
+    set({ isLoadingFromServer: true, ...defaultFormData, submissionId: null, generatedPlan: "", planGeneratedAt: "", andreaEditedFields: new Set<string>() });
     try {
       const { data, error } = await supabase.functions.invoke("load-intake", {
         body: { accessCodeId },
