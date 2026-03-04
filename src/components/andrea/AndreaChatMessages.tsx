@@ -1,19 +1,25 @@
 import { useEffect, useRef } from "react";
 import { cn } from "@/lib/utils";
+import { Button } from "@/components/ui/button";
+import { Check } from "lucide-react";
 import AndreaEditSuggestion from "./AndreaEditSuggestion";
 import type { ChatMessage } from "@/hooks/use-andrea-chat";
 
 interface AndreaChatMessagesProps {
   messages: ChatMessage[];
   appliedEdits: Set<string>;
+  dismissedEdits: Set<string>;
   onApplyEdit: (fieldId: string, value: string | string[], editKey: string, mode: "replace" | "append") => void;
+  onDismissEdit: (editKey: string) => void;
   isLoading: boolean;
 }
 
 export default function AndreaChatMessages({
   messages,
   appliedEdits,
+  dismissedEdits,
   onApplyEdit,
+  onDismissEdit,
   isLoading,
 }: AndreaChatMessagesProps) {
   const bottomRef = useRef<HTMLDivElement>(null);
@@ -45,24 +51,61 @@ export default function AndreaChatMessages({
             </div>
 
             {/* Field edit suggestions */}
-            {msg.fieldEdits && msg.fieldEdits.length > 0 && (
-              <div className="mt-1 ml-0 max-w-[85%] space-y-1.5">
-                {msg.fieldEdits.map((edit) => {
-                  const editKey = `${msg.id}-${edit.fieldId}`;
-                  return (
-                    <AndreaEditSuggestion
-                      key={editKey}
-                      edit={edit}
-                      editKey={editKey}
-                      isApplied={appliedEdits.has(editKey)}
-                      onApply={(mode) =>
-                        onApplyEdit(edit.fieldId, edit.suggestedValue, editKey, mode)
-                      }
-                    />
-                  );
-                })}
-              </div>
-            )}
+            {msg.fieldEdits && msg.fieldEdits.length > 0 && (() => {
+              const pendingEdits = msg.fieldEdits.filter((edit) => {
+                const key = `${msg.id}-${edit.fieldId}`;
+                return !appliedEdits.has(key) && !dismissedEdits.has(key);
+              });
+              return (
+                <div className="mt-1 ml-0 max-w-[85%] space-y-1.5">
+                  {msg.fieldEdits.map((edit) => {
+                    const editKey = `${msg.id}-${edit.fieldId}`;
+                    return (
+                      <AndreaEditSuggestion
+                        key={editKey}
+                        edit={edit}
+                        editKey={editKey}
+                        isApplied={appliedEdits.has(editKey)}
+                        isDismissed={dismissedEdits.has(editKey)}
+                        onApply={(mode) =>
+                          onApplyEdit(edit.fieldId, edit.suggestedValue, editKey, mode)
+                        }
+                        onReject={() => onDismissEdit(editKey)}
+                      />
+                    );
+                  })}
+                  {/* Bulk actions when 2+ suggestions are pending */}
+                  {pendingEdits.length >= 2 && (
+                    <div className="flex items-center gap-2 pt-1">
+                      <Button
+                        size="sm"
+                        className="h-7 text-xs gap-1.5"
+                        onClick={() =>
+                          pendingEdits.forEach((e) =>
+                            onApplyEdit(e.fieldId, e.suggestedValue, `${msg.id}-${e.fieldId}`, "replace")
+                          )
+                        }
+                      >
+                        <Check className="h-3 w-3" />
+                        Replace All
+                      </Button>
+                      <Button
+                        size="sm"
+                        variant="secondary"
+                        className="h-7 text-xs gap-1.5"
+                        onClick={() =>
+                          pendingEdits.forEach((e) =>
+                            onApplyEdit(e.fieldId, e.suggestedValue, `${msg.id}-${e.fieldId}`, "append")
+                          )
+                        }
+                      >
+                        Append All
+                      </Button>
+                    </div>
+                  )}
+                </div>
+              );
+            })()}
           </div>
         );
       })}
