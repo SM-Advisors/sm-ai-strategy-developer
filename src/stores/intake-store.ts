@@ -242,6 +242,8 @@ export const useIntakeStore = create<IntakeStore>()((set, get) => ({
       submissionId: null,
       generatedPlan: "",
       planGeneratedAt: "",
+      planVersions: [],
+      currentPlanVersion: null,
       andreaEditedFields: new Set<string>(),
       _accessCodeId: accessCodeId,
       _orgUserId: orgUserId ?? null,
@@ -257,6 +259,12 @@ export const useIntakeStore = create<IntakeStore>()((set, get) => ({
         const { id, intake_data } = data.submission;
         const merged = { ...defaultFormData, ...(intake_data as Partial<IntakeFormData>) };
         set({ submissionId: id, ...merged });
+
+        // Store plan versions
+        const versions = data.planVersions ?? [];
+        if (versions.length > 0) {
+          set({ planVersions: versions, currentPlanVersion: versions[0].version_number });
+        }
 
         if (data.planSignedUrl) {
           try {
