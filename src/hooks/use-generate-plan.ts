@@ -84,17 +84,17 @@ export function useGeneratePlan() {
       clearTimeout(timeout);
       store.setIsGenerating(false);
 
-      // Save/update submission + upload plan to storage (fire-and-forget)
+      // Save/update submission + upload plan to storage with versioning (fire-and-forget)
       const finalPlan = useIntakeStore.getState().generatedPlan;
       const existingSubmissionId = useIntakeStore.getState().submissionId;
+      const currentVersions = useIntakeStore.getState().planVersions;
       const session = useAuthStore.getState().session;
       const fd = formData;
       (async () => {
         try {
           if (!session?.accessCodeId) return;
 
-          // Save intake data via edge function (uses service_role key — bypasses RLS).
-          // This handles both UPDATE (existing submission) and INSERT (new submission).
+          // Save intake data via edge function
           const { data: saveData, error: saveErr } = await supabase.functions.invoke("save-intake", {
             body: {
               accessCodeId: session.accessCodeId,
@@ -111,8 +111,13 @@ export function useGeneratePlan() {
             useIntakeStore.getState().setSubmissionId(submissionId);
           }
 
-          // Upload plan markdown to storage (public INSERT policy allows this)
-          const fileName = `${submissionId}/plan.md`;
+          // Determine next version number
+          const nextVersion = currentVersions.length > 0
+            ? Math.max(...currentVersions.map(v => v.version_number)) + 1
+            : 1;
+          const fileName = `${submissionId}/plan-v${nextVersion}.md`;
+
+          // Upload plan markdown to storage
           const blob = new Blob([finalPlan], { type: "text/markdown" });
           const { error: uploadErr } = await (supabase as any).storage
             .from("plans")
@@ -120,13 +125,33 @@ export function useGeneratePlan() {
 
           if (uploadErr) throw uploadErr;
 
-          // Update plan_file_path via edge function (service_role key bypasses RLS)
+          // Create version record
+          await (supabase as any)
+            .from("plan_versions")
+            .insert({
+              submission_id: submissionId,
+              version_number: nextVersion,
+              file_path: fileName,
+              label: "Generated",
+            });
+
+          // Update plan_file_path on submission
           await supabase.functions.invoke("save-intake", {
             body: {
               accessCodeId: session.accessCodeId,
               planFilePath: fileName,
             },
           });
+
+          // Update local version state
+          const newVersion = {
+            version_number: nextVersion,
+            file_path: fileName,
+            label: "Generated",
+            created_at: new Date().toISOString(),
+          };
+          useIntakeStore.getState().setPlanVersions([newVersion, ...currentVersions]);
+          useIntakeStore.getState().setCurrentPlanVersion(nextVersion);
 
           // Update session state so index page shows "View Your Plan"
           useAuthStore.getState().updateSessionSubmissionState(true, true);
