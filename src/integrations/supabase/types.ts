@@ -169,6 +169,41 @@ export type Database = {
           },
         ]
       }
+      plan_versions: {
+        Row: {
+          created_at: string
+          file_path: string
+          id: string
+          label: string
+          submission_id: string
+          version_number: number
+        }
+        Insert: {
+          created_at?: string
+          file_path: string
+          id?: string
+          label?: string
+          submission_id: string
+          version_number?: number
+        }
+        Update: {
+          created_at?: string
+          file_path?: string
+          id?: string
+          label?: string
+          submission_id?: string
+          version_number?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "plan_versions_submission_id_fkey"
+            columns: ["submission_id"]
+            isOneToOne: false
+            referencedRelation: "submissions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       submissions: {
         Row: {
           access_code_id: string | null
