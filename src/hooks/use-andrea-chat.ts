@@ -183,6 +183,13 @@ export function useAndreaChat() {
     []
   );
 
+  /** Cancel in-flight request */
+  const cancelRequest = useCallback(() => {
+    abortRef.current?.abort();
+    abortRef.current = null;
+    setIsLoading(false);
+  }, []);
+
   return {
     messages,
     isLoading,
@@ -190,6 +197,7 @@ export function useAndreaChat() {
     appliedEdits,
     dismissedEdits,
     sendMessage,
+    cancelRequest,
     applyFieldEdit,
     dismissFieldEdit,
   };
