@@ -11,6 +11,7 @@ import { Button } from "@/components/ui/button";
 import { ArrowLeft, ArrowRight, Sparkles, FileText, Loader2 } from "lucide-react";
 import { useGeneratePlan } from "@/hooks/use-generate-plan";
 import AndreaChat from "@/components/andrea/AndreaChat";
+import SaveIndicator from "@/components/intake/SaveIndicator";
 
 const TOTAL_STEPS = sections.length + 1; // sections + review
 
@@ -181,6 +182,7 @@ const Intake = () => {
                   View Plan
                 </Button>
               )}
+              <SaveIndicator />
               <span className="text-xs text-muted-foreground">Intake Assessment</span>
             </div>
           </div>
