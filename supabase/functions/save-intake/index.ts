@@ -17,7 +17,7 @@ serve(async (req) => {
     const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
     if (!SUPABASE_URL || !SUPABASE_SERVICE_ROLE_KEY) throw new Error("Missing env vars");
 
-    const { accessCodeId, orgUserId, fieldId, value, oldValue, isAndreaSuggestion, fullIntakeData } = await req.json();
+    const { accessCodeId, orgUserId, fieldId, value, oldValue, isAndreaSuggestion, fullIntakeData, planFilePath } = await req.json();
 
     if (!accessCodeId) {
       return new Response(
@@ -39,6 +39,36 @@ serve(async (req) => {
     let upsertData: Record<string, unknown>;
 
     if (fullIntakeData) {
+      // For fullIntakeData: check if submission already exists and UPDATE it,
+      // otherwise fall through to INSERT. This prevents duplicate submissions.
+      const { data: existingForFull } = await supabase
+        .from("submissions")
+        .select("id")
+        .eq("access_code_id", accessCodeId)
+        .maybeSingle();
+
+      if (existingForFull) {
+        const { error: fullUpdateErr } = await supabase
+          .from("submissions")
+          .update({
+            intake_data: fullIntakeData,
+            company_name: companyName,
+            industry: industry,
+            num_employees: numEmployees,
+            last_edited_by: orgUserId ?? null,
+            last_edited_at: new Date().toISOString(),
+            ...(planFilePath !== undefined ? { plan_file_path: planFilePath } : {}),
+          })
+          .eq("id", existingForFull.id);
+
+        if (fullUpdateErr) throw fullUpdateErr;
+
+        return new Response(
+          JSON.stringify({ ok: true, submissionId: existingForFull.id }),
+          { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+
       upsertData = {
         access_code_id: accessCodeId,
         intake_data: fullIntakeData,
@@ -47,7 +77,34 @@ serve(async (req) => {
         num_employees: numEmployees,
         last_edited_by: orgUserId ?? null,
         last_edited_at: new Date().toISOString(),
+        ...(planFilePath !== undefined ? { plan_file_path: planFilePath } : {}),
       };
+    } else if (planFilePath !== undefined && !fieldId) {
+      // Plan-only update: just set plan_file_path on existing submission
+      const { data: existingForPlan } = await supabase
+        .from("submissions")
+        .select("id")
+        .eq("access_code_id", accessCodeId)
+        .maybeSingle();
+
+      if (!existingForPlan) {
+        return new Response(
+          JSON.stringify({ error: "No submission found for this access code" }),
+          { status: 404, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+
+      const { error: planUpdateErr } = await supabase
+        .from("submissions")
+        .update({ plan_file_path: planFilePath })
+        .eq("id", existingForPlan.id);
+
+      if (planUpdateErr) throw planUpdateErr;
+
+      return new Response(
+        JSON.stringify({ ok: true, submissionId: existingForPlan.id }),
+        { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
     } else if (fieldId !== undefined) {
       // Partial update: patch just this field inside intake_data
       // We'll do a select-then-update to safely merge

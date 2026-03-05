@@ -35,8 +35,21 @@ serve(async (req) => {
 
     if (error) throw error;
 
+    // If there's a saved plan, generate a short-lived signed URL so the client
+    // can download the plan text and restore it in memory (storage RLS blocks
+    // anon/org-user direct access to the plans bucket).
+    let planSignedUrl: string | null = null;
+    if (submission?.plan_file_path) {
+      const { data: signedData, error: signErr } = await supabase.storage
+        .from("plans")
+        .createSignedUrl(submission.plan_file_path, 300); // 5-minute TTL
+      if (!signErr && signedData?.signedUrl) {
+        planSignedUrl = signedData.signedUrl;
+      }
+    }
+
     return new Response(
-      JSON.stringify({ submission: submission ?? null }),
+      JSON.stringify({ submission: submission ?? null, planSignedUrl }),
       { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
   } catch (e) {

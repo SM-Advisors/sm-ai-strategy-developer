@@ -108,11 +108,8 @@ serve(async (req) => {
         .eq("access_code_id", codeRow.id)
         .maybeSingle();
 
-      // Increment use_count on code
-      await supabase
-        .from("access_codes")
-        .update({ use_count: codeRow.use_count + 1 })
-        .eq("id", codeRow.id);
+      // Increment use_count atomically using the RPC function (prevents race conditions)
+      await supabase.rpc("increment_access_code_use_count", { p_code_id: codeRow.id });
 
       return new Response(
         JSON.stringify({
