@@ -19,6 +19,13 @@ export interface ChatMessage {
   suggestedPrompts?: string[];
 }
 
+export interface Conversation {
+  id: string;
+  title: string;
+  messages: ChatMessage[];
+  createdAt: number;
+}
+
 // --- Constants ---
 
 const INITIAL_PROMPTS = [
@@ -35,19 +42,58 @@ const WELCOME_MESSAGE: ChatMessage = {
   suggestedPrompts: INITIAL_PROMPTS,
 };
 
+function createConversation(): Conversation {
+  return {
+    id: crypto.randomUUID(),
+    title: "New conversation",
+    messages: [WELCOME_MESSAGE],
+    createdAt: Date.now(),
+  };
+}
+
+/** Derive a short title from the first user message */
+function deriveTitle(text: string): string {
+  const cleaned = text.trim().replace(/\n+/g, " ");
+  return cleaned.length > 40 ? cleaned.slice(0, 40) + "…" : cleaned;
+}
+
 // --- Hook ---
 
 export function useAndreaChat() {
-  const [messages, setMessages] = useState<ChatMessage[]>([WELCOME_MESSAGE]);
+  const [conversations, setConversations] = useState<Conversation[]>(() => [createConversation()]);
+  const [activeId, setActiveId] = useState<string>(() => conversations[0]?.id ?? "");
   const [isLoading, setIsLoading] = useState(false);
   const [appliedEdits, setAppliedEdits] = useState<Set<string>>(new Set());
   const [dismissedEdits, setDismissedEdits] = useState<Set<string>>(new Set());
   const abortRef = useRef<AbortController | null>(null);
 
+  const activeConversation = conversations.find((c) => c.id === activeId) ?? conversations[0];
+  const messages = activeConversation?.messages ?? [WELCOME_MESSAGE];
+
   /** Get the latest suggested prompts from the most recent assistant message */
   const latestPrompts =
     [...messages].reverse().find((m) => m.role === "assistant" && m.suggestedPrompts?.length)
       ?.suggestedPrompts ?? [];
+
+  /** Update messages for the active conversation */
+  const updateActiveMessages = useCallback(
+    (updater: (prev: ChatMessage[]) => ChatMessage[]) => {
+      setConversations((prev) =>
+        prev.map((c) => (c.id === activeId ? { ...c, messages: updater(c.messages) } : c))
+      );
+    },
+    [activeId]
+  );
+
+  /** Update the title of the active conversation */
+  const updateActiveTitle = useCallback(
+    (title: string) => {
+      setConversations((prev) =>
+        prev.map((c) => (c.id === activeId ? { ...c, title } : c))
+      );
+    },
+    [activeId]
+  );
 
   /** Build context payload from current intake store state */
   const buildContext = useCallback(() => {
@@ -92,7 +138,13 @@ export function useAndreaChat() {
         content: text.trim(),
       };
 
-      setMessages((prev) => [...prev, userMessage]);
+      // If this is the first user message, set conversation title
+      const isFirstUserMsg = !messages.some((m) => m.role === "user");
+      if (isFirstUserMsg) {
+        updateActiveTitle(deriveTitle(text));
+      }
+
+      updateActiveMessages((prev) => [...prev, userMessage]);
       setIsLoading(true);
 
       // Cancel any in-flight request
@@ -139,7 +191,7 @@ export function useAndreaChat() {
           suggestedPrompts: Array.isArray(data.suggestedPrompts) && data.suggestedPrompts.length > 0 ? data.suggestedPrompts : undefined,
         };
 
-        setMessages((prev) => [...prev, assistantMessage]);
+        updateActiveMessages((prev) => [...prev, assistantMessage]);
       } catch (err: any) {
         if (err.name === "AbortError") return; // Intentional cancellation
 
@@ -151,12 +203,71 @@ export function useAndreaChat() {
           content: "I'm sorry, I had trouble connecting. Please try sending your message again.",
           suggestedPrompts: ["Try again"],
         };
-        setMessages((prev) => [...prev, errorMessage]);
+        updateActiveMessages((prev) => [...prev, errorMessage]);
       } finally {
         setIsLoading(false);
       }
     },
-    [isLoading, messages, buildContext]
+    [isLoading, messages, buildContext, updateActiveMessages, updateActiveTitle]
+  );
+
+  /** Cancel in-flight request */
+  const cancelRequest = useCallback(() => {
+    abortRef.current?.abort();
+    abortRef.current = null;
+    setIsLoading(false);
+  }, []);
+
+  /** Start a new conversation */
+  const startNewChat = useCallback(() => {
+    // Cancel any in-flight request first
+    abortRef.current?.abort();
+    abortRef.current = null;
+    setIsLoading(false);
+
+    const newConvo = createConversation();
+    setConversations((prev) => [newConvo, ...prev]);
+    setActiveId(newConvo.id);
+    setAppliedEdits(new Set());
+    setDismissedEdits(new Set());
+  }, []);
+
+  /** Switch to an existing conversation */
+  const switchConversation = useCallback(
+    (conversationId: string) => {
+      if (conversationId === activeId) return;
+      // Cancel any in-flight request
+      abortRef.current?.abort();
+      abortRef.current = null;
+      setIsLoading(false);
+
+      setActiveId(conversationId);
+      setAppliedEdits(new Set());
+      setDismissedEdits(new Set());
+    },
+    [activeId]
+  );
+
+  /** Delete a conversation */
+  const deleteConversation = useCallback(
+    (conversationId: string) => {
+      setConversations((prev) => {
+        const filtered = prev.filter((c) => c.id !== conversationId);
+        // If we deleted the active one, switch to first or create new
+        if (conversationId === activeId) {
+          if (filtered.length === 0) {
+            const newConvo = createConversation();
+            setActiveId(newConvo.id);
+            return [newConvo];
+          }
+          setActiveId(filtered[0].id);
+        }
+        return filtered;
+      });
+      setAppliedEdits(new Set());
+      setDismissedEdits(new Set());
+    },
+    [activeId]
   );
 
   /** Dismiss a field edit suggestion without applying it */
@@ -183,21 +294,19 @@ export function useAndreaChat() {
     []
   );
 
-  /** Cancel in-flight request */
-  const cancelRequest = useCallback(() => {
-    abortRef.current?.abort();
-    abortRef.current = null;
-    setIsLoading(false);
-  }, []);
-
   return {
     messages,
     isLoading,
     latestPrompts,
     appliedEdits,
     dismissedEdits,
+    conversations,
+    activeConversationId: activeId,
     sendMessage,
     cancelRequest,
+    startNewChat,
+    switchConversation,
+    deleteConversation,
     applyFieldEdit,
     dismissFieldEdit,
   };
