@@ -100,22 +100,9 @@ function scheduleSave(
 
   if (saveTimers[fieldId]) clearTimeout(saveTimers[fieldId]);
 
-  saveTimers[fieldId] = setTimeout(async () => {
-    try {
-      await supabase.functions.invoke("save-intake", {
-        body: {
-          accessCodeId,
-          orgUserId: orgUserId ?? null,
-          fieldId,
-          value,
-          oldValue,
-          isAndreaSuggestion,
-        },
-      });
-    } catch (err) {
-      console.warn("Field save failed:", fieldId, err);
-    }
-  }, 800);
+  saveTimers[fieldId] = setTimeout(() => {
+    performSave(fieldId, value, oldValue, accessCodeId, orgUserId, isAndreaSuggestion);
+  }, 400);
 }
 
 export const useIntakeStore = create<IntakeStore>()((set, get) => ({
@@ -128,6 +115,7 @@ export const useIntakeStore = create<IntakeStore>()((set, get) => ({
   submissionId: null,
   isLoadingFromServer: false,
   isSyncing: false,
+  saveStatus: "idle" as SaveStatus,
   andreaEditedFields: new Set<string>(),
 
   setCurrentStep: (step) => set({ currentStep: step }),
