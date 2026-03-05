@@ -193,6 +193,32 @@ export const useIntakeStore = create<IntakeStore>()((set, get) => ({
 
   setSubmissionId: (id) => set({ submissionId: id }),
 
+  setPlanVersions: (versions) => set({ planVersions: versions }),
+  setCurrentPlanVersion: (version) => set({ currentPlanVersion: version }),
+  loadPlanVersion: async (version: PlanVersion) => {
+    try {
+      const { _accessCodeId } = get();
+      if (!_accessCodeId) return;
+      // Get signed URL via load-intake won't work for arbitrary versions,
+      // so we use a direct edge function call
+      const { data, error } = await supabase.functions.invoke("load-intake", {
+        body: { accessCodeId: _accessCodeId, planVersionPath: version.file_path },
+      });
+      if (error) throw error;
+      if (data?.planSignedUrl) {
+        const resp = await fetch(data.planSignedUrl);
+        if (resp.ok) {
+          const text = await resp.text();
+          if (text) {
+            set({ generatedPlan: text, currentPlanVersion: version.version_number, planGeneratedAt: version.created_at });
+          }
+        }
+      }
+    } catch (err) {
+      console.warn("Failed to load plan version:", err);
+    }
+  },
+
   clearAndreaEdit: (fieldId) => set((s) => {
     const next = new Set(s.andreaEditedFields);
     next.delete(fieldId);
