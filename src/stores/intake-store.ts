@@ -69,6 +69,9 @@ interface IntakeStore extends IntakeFormData {
   isLoadingFromServer: boolean;
   isSyncing: boolean;
   saveStatus: SaveStatus;
+  // Session context for saving (set during loadFromServer)
+  _accessCodeId: string | null;
+  _orgUserId: string | null;
   // Andrea tracking
   andreaEditedFields: Set<string>;
 
@@ -81,7 +84,7 @@ interface IntakeStore extends IntakeFormData {
   setGenerationStatus: (status: string) => void;
   getFormData: () => IntakeFormData;
   // Server sync
-  loadFromServer: (accessCodeId: string) => Promise<void>;
+  loadFromServer: (accessCodeId: string, orgUserId?: string) => Promise<void>;
   setSubmissionId: (id: string | null) => void;
   clearAndreaEdit: (fieldId: string) => void;
 }
@@ -116,6 +119,8 @@ export const useIntakeStore = create<IntakeStore>()((set, get) => ({
   isLoadingFromServer: false,
   isSyncing: false,
   saveStatus: "idle" as SaveStatus,
+  _accessCodeId: null,
+  _orgUserId: null,
   andreaEditedFields: new Set<string>(),
 
   setCurrentStep: (step) => set({ currentStep: step }),
@@ -131,22 +136,16 @@ export const useIntakeStore = create<IntakeStore>()((set, get) => ({
         : s.andreaEditedFields,
     }));
 
-    // Get session from auth store (imported lazily to avoid circular deps)
-    try {
-      const { useAuthStore } = require("@/stores/auth-store");
-      const session = useAuthStore.getState().session;
-      if (session?.accessCodeId) {
-        scheduleSave(
-          field as string,
-          value,
-          oldValue,
-          session.accessCodeId,
-          session.orgUserId,
-          opts.isAndreaSuggestion ?? false
-        );
-      }
-    } catch {
-      // auth-store not available (e.g., during tests)
+    const { _accessCodeId, _orgUserId } = get();
+    if (_accessCodeId) {
+      scheduleSave(
+        field as string,
+        value,
+        oldValue,
+        _accessCodeId,
+        _orgUserId ?? undefined,
+        opts.isAndreaSuggestion ?? false
+      );
     }
   },
 
@@ -162,13 +161,10 @@ export const useIntakeStore = create<IntakeStore>()((set, get) => ({
     }
     set({ [field]: newArr as any });
 
-    try {
-      const { useAuthStore } = require("@/stores/auth-store");
-      const session = useAuthStore.getState().session;
-      if (session?.accessCodeId) {
-        scheduleSave(field as string, newArr, arr, session.accessCodeId, session.orgUserId, false);
-      }
-    } catch { /* ignore */ }
+    const { _accessCodeId, _orgUserId } = get();
+    if (_accessCodeId) {
+      scheduleSave(field as string, newArr, arr, _accessCodeId, _orgUserId ?? undefined, false);
+    }
   },
 
   setGeneratedPlan: (plan) => set({ generatedPlan: plan, planGeneratedAt: plan ? new Date().toISOString() : "" }),
@@ -196,9 +192,18 @@ export const useIntakeStore = create<IntakeStore>()((set, get) => ({
     return data as unknown as IntakeFormData;
   },
 
-  loadFromServer: async (accessCodeId: string) => {
-    // Reset form data to defaults before loading to prevent cross-org data leakage
-    set({ isLoadingFromServer: true, ...defaultFormData, submissionId: null, generatedPlan: "", planGeneratedAt: "", andreaEditedFields: new Set<string>() });
+  loadFromServer: async (accessCodeId: string, orgUserId?: string) => {
+    // Store session context for saving — this is the critical link
+    set({
+      isLoadingFromServer: true,
+      ...defaultFormData,
+      submissionId: null,
+      generatedPlan: "",
+      planGeneratedAt: "",
+      andreaEditedFields: new Set<string>(),
+      _accessCodeId: accessCodeId,
+      _orgUserId: orgUserId ?? null,
+    });
     try {
       const { data, error } = await supabase.functions.invoke("load-intake", {
         body: { accessCodeId },
@@ -208,12 +213,9 @@ export const useIntakeStore = create<IntakeStore>()((set, get) => ({
 
       if (data?.submission) {
         const { id, intake_data } = data.submission;
-        // Merge server data with defaults (in case new fields were added)
         const merged = { ...defaultFormData, ...(intake_data as Partial<IntakeFormData>) };
         set({ submissionId: id, ...merged });
 
-        // Restore the generated plan if one exists — the signed URL comes from
-        // load-intake (service_role key) so it bypasses storage RLS for org users.
         if (data.planSignedUrl) {
           try {
             const planResp = await fetch(data.planSignedUrl);
@@ -226,7 +228,7 @@ export const useIntakeStore = create<IntakeStore>()((set, get) => ({
           } catch { /* ignore plan load errors — user can regenerate */ }
         }
       } else {
-        // No existing submission for this code — check localStorage for legacy data (one-time migration)
+        // No existing submission — check localStorage for legacy data (one-time migration)
         try {
           const legacyRaw = localStorage.getItem("intake-form-storage");
           if (legacyRaw) {
@@ -239,19 +241,13 @@ export const useIntakeStore = create<IntakeStore>()((set, get) => ({
                 }
               }
               set(formFields as Partial<IntakeStore>);
-              // Save to server linked to this access code
-              const { useAuthStore } = require("@/stores/auth-store");
-              const session = useAuthStore.getState().session;
-              if (session?.accessCodeId) {
-                supabase.functions.invoke("save-intake", {
-                  body: {
-                    accessCodeId: session.accessCodeId,
-                    orgUserId: session.orgUserId,
-                    fullIntakeData: formFields,
-                  },
-                }).catch(console.warn);
-              }
-              // Clear legacy storage so it doesn't bleed into other orgs
+              supabase.functions.invoke("save-intake", {
+                body: {
+                  accessCodeId,
+                  orgUserId: orgUserId ?? null,
+                  fullIntakeData: formFields,
+                },
+              }).catch(console.warn);
               localStorage.removeItem("intake-form-storage");
             }
           }
