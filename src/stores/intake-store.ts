@@ -4,8 +4,59 @@ import { supabase } from "@/integrations/supabase/client";
 
 export type { IntakeFormData };
 
+export type SaveStatus = "idle" | "saving" | "saved" | "error";
+
 // Debounce helper (per-field timers)
 const saveTimers: Record<string, ReturnType<typeof setTimeout>> = {};
+let savedTimer: ReturnType<typeof setTimeout> | null = null;
+
+// Track in-flight saves so we know when all are done
+let inflightSaves = 0;
+
+function setSaveStatus(status: SaveStatus) {
+  useIntakeStore.setState({ saveStatus: status });
+}
+
+async function performSave(
+  fieldId: string,
+  value: unknown,
+  oldValue: unknown,
+  accessCodeId: string,
+  orgUserId: string | undefined,
+  isAndreaSuggestion: boolean
+) {
+  inflightSaves++;
+  setSaveStatus("saving");
+  if (savedTimer) { clearTimeout(savedTimer); savedTimer = null; }
+
+  try {
+    const { error } = await supabase.functions.invoke("save-intake", {
+      body: {
+        accessCodeId,
+        orgUserId: orgUserId ?? null,
+        fieldId,
+        value,
+        oldValue,
+        isAndreaSuggestion,
+      },
+    });
+    if (error) throw error;
+  } catch (err) {
+    console.warn("Field save failed:", fieldId, err);
+    setSaveStatus("error");
+    // Retry once after 2s
+    setTimeout(() => performSave(fieldId, value, oldValue, accessCodeId, orgUserId, isAndreaSuggestion), 2000);
+    inflightSaves--;
+    return;
+  }
+
+  inflightSaves--;
+  if (inflightSaves <= 0) {
+    inflightSaves = 0;
+    setSaveStatus("saved");
+    savedTimer = setTimeout(() => setSaveStatus("idle"), 3000);
+  }
+}
 
 interface IntakeStore extends IntakeFormData {
   currentStep: number;
@@ -17,6 +68,7 @@ interface IntakeStore extends IntakeFormData {
   submissionId: string | null;
   isLoadingFromServer: boolean;
   isSyncing: boolean;
+  saveStatus: SaveStatus;
   // Andrea tracking
   andreaEditedFields: Set<string>;
 
