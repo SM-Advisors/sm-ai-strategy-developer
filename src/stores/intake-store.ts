@@ -69,6 +69,9 @@ interface IntakeStore extends IntakeFormData {
   isLoadingFromServer: boolean;
   isSyncing: boolean;
   saveStatus: SaveStatus;
+  // Session context for saving (set during loadFromServer)
+  _accessCodeId: string | null;
+  _orgUserId: string | null;
   // Andrea tracking
   andreaEditedFields: Set<string>;
 
@@ -81,7 +84,7 @@ interface IntakeStore extends IntakeFormData {
   setGenerationStatus: (status: string) => void;
   getFormData: () => IntakeFormData;
   // Server sync
-  loadFromServer: (accessCodeId: string) => Promise<void>;
+  loadFromServer: (accessCodeId: string, orgUserId?: string) => Promise<void>;
   setSubmissionId: (id: string | null) => void;
   clearAndreaEdit: (fieldId: string) => void;
 }
