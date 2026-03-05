@@ -135,6 +135,8 @@ export const useIntakeStore = create<IntakeStore>()((set, get) => ({
   saveStatus: "idle" as SaveStatus,
   _accessCodeId: null,
   _orgUserId: null,
+  planVersions: [] as PlanVersion[],
+  currentPlanVersion: null,
   andreaEditedFields: new Set<string>(),
 
   setCurrentStep: (step) => set({ currentStep: step }),
