@@ -14,7 +14,8 @@ interface PlanTocSidebarProps {
 }
 
 export function extractHeadings(markdown: string): TocItem[] {
-  const headingRegex = /^(#{1,3})\s+(.+)$/gm;
+  // Only H1 and H2 — top-level sections only
+  const headingRegex = /^(#{1,2})\s+(.+)$/gm;
   const items: TocItem[] = [];
   let match;
   while ((match = headingRegex.exec(markdown)) !== null) {
@@ -53,9 +54,8 @@ const PlanTocSidebar = ({ markdown, activeId }: PlanTocSidebarProps) => {
           onClick={() => handleClick(h.id)}
           className={cn(
             "block w-full text-left text-xs leading-relaxed py-1.5 rounded-sm px-2 transition-colors duration-150",
-            h.level === 1 && "font-semibold",
-            h.level === 2 && "pl-2",
-            h.level === 3 && "pl-5 text-[11px]",
+            h.level === 1 && "font-semibold text-foreground/80",
+            h.level === 2 && "pl-3 font-normal",
             activeId === h.id
               ? "text-primary bg-primary/10"
               : "text-muted-foreground hover:text-foreground hover:bg-accent"

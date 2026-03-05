@@ -28,10 +28,7 @@ A concise 1-page overview including: who the organization is (grounded in their 
 ### II. Organizational Context Used
 Explicitly state what information from the intake was used to build this plan. List the key data points that shaped the recommendations. Be transparent about the quality and completeness of the input data.
 
-### III. Key Assumptions
-List every assumption you are making where the intake data was incomplete, ambiguous, or where you are inferring context. Number these clearly. For each assumption, note how the recommendation would change if the assumption is wrong.
-
-### IV. AI Readiness Assessment
+### III. AI Readiness Assessment
 Assess the organization across 5 dimensions with a rating (1-5) and narrative:
 - **Leadership Alignment** — Does leadership have the urgency and authority to drive this?
 - **Technology Foundation** — Are existing tools and infrastructure ready for AI integration?
@@ -40,7 +37,7 @@ Assess the organization across 5 dimensions with a rating (1-5) and narrative:
 - **Communication & Idea Capture Maturity** — Does the org have mechanisms to surface ideas, friction points, and feedback from the front line? (This dimension directly informs the Communication Hub recommendation.)
 Include a summary readiness score and what it means for implementation pace.
 
-### V. Strategic AI Roadmap
+### IV. Strategic AI Roadmap
 Organize into three phases with a consolidation gap:
 
 **Phase 1: Foundation & Muscle Memory (Months 0–3)**
@@ -79,7 +76,7 @@ For EACH phase, provide:
 - Estimated investment for this phase
 - **Cumulative budget tracker** (running total across phases)
 
-### VI. Communication Hub Design
+### V. Communication Hub Design
 This is a critical component of Phase 1. Design a specific, actionable Communication Hub recommendation tailored to this organization:
 - **Recommended platform/channel** based on their existing technology stack (e.g., Slack channel, Teams channel, simple web form, shared document)
 - **How users submit ideas** — must be ridiculously simple, zero friction. Users should be able to describe unstructured thoughts in any format.
@@ -88,7 +85,7 @@ This is a critical component of Phase 1. Design a specific, actionable Communica
 - **Integration with the AI Working Group** — how the hub feeds into meeting agendas and strategic decisions
 - **Success metrics** for the hub itself (submission volume, ideas actioned, time from idea to evaluation)
 
-### VII. Recommended AI Use Cases
+### VI. Recommended AI Use Cases
 For each recommended use case, provide:
 - Use case name
 - Department(s) impacted
@@ -102,7 +99,7 @@ For each recommended use case, provide:
 
 Present as a prioritization matrix table.
 
-### VIII. Governance & Risk Framework
+### VII. Governance & Risk Framework
 Based on their regulatory environment and risk tolerance:
 - Recommended AI governance structure (scaled to their size and industry)
 - Data handling policies
@@ -110,7 +107,7 @@ Based on their regulatory environment and risk tolerance:
 - Risk mitigation strategies
 - Compliance alignment notes
 
-### IX. Investment & Resource Plan
+### VIII. Investment & Resource Plan
 Based on their stated budget, provide a detailed per-phase breakdown:
 - **Phase 1 budget** with line items and justification
 - **Phase 2 budget** with line items and justification
@@ -121,7 +118,7 @@ Based on their stated budget, provide a detailed per-phase breakdown:
 - Vendor evaluation criteria
 - ROI framework — when does the investment start paying for itself?
 
-### X. Success Metrics & KPIs
+### IX. Success Metrics & KPIs
 This section must reflect ROI-oriented measurement, NOT vanity metrics.
 
 Required KPI categories (include all that are relevant):
@@ -141,8 +138,19 @@ For each KPI:
 
 Include a sample dashboard outline showing how leadership should monitor progress.
 
-### XI. Areas for Deeper Exploration
+### X. Areas for Deeper Exploration
 Identify 5-10 specific questions or topics that leadership should discuss further to refine this plan. These should be genuine gaps — things the intake couldn't capture — that would materially change the recommendations. Frame each as a discussion question with context on why it matters.
+
+### Appendix A: AI Assumptions & Caveats
+This appendix documents every assumption made where intake data was incomplete, ambiguous, or where context was inferred. Its purpose is to be transparent with the reader about what was assumed versus what was directly provided.
+
+For each assumption:
+- Number it clearly (Assumption 1, Assumption 2, etc.)
+- State the assumption explicitly
+- Explain what intake data was missing or ambiguous that led to this assumption
+- Note how the recommendation would change if this assumption is incorrect
+
+This section helps leadership and stakeholders understand the confidence level of the plan and identify where additional discovery or validation would materially improve the recommendations.
 
 ## Formatting Rules
 - Use markdown headers, bullet points, and tables for readability
