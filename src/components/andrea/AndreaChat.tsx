@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, useCallback } from "react";
 import { X, Send } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useAndreaChat } from "@/hooks/use-andrea-chat";
@@ -17,7 +17,7 @@ interface AndreaChatProps {
 
 export default function AndreaChat({ isOpen, onOpen, onClose, dimBubble }: AndreaChatProps) {
   const [inputValue, setInputValue] = useState("");
-  const inputRef = useRef<HTMLInputElement>(null);
+  const inputRef = useRef<HTMLTextAreaElement>(null);
 
   const {
     messages,
@@ -42,6 +42,29 @@ export default function AndreaChat({ isOpen, onOpen, onClose, dimBubble }: Andre
     if (!inputValue.trim() || isLoading) return;
     sendMessage(inputValue.trim());
     setInputValue("");
+    if (inputRef.current) inputRef.current.style.height = "auto";
+  };
+
+  const handleKeyDown = useCallback(
+    (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
+      // Enter alone sends; Shift+Enter or Ctrl+Shift+Enter adds a newline
+      if (e.key === "Enter" && !e.shiftKey && !e.ctrlKey) {
+        e.preventDefault();
+        if (inputValue.trim() && !isLoading) {
+          sendMessage(inputValue.trim());
+          setInputValue("");
+          if (inputRef.current) inputRef.current.style.height = "auto";
+        }
+      }
+    },
+    [inputValue, isLoading, sendMessage]
+  );
+
+  const handleInput = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
+    setInputValue(e.target.value);
+    const el = e.target;
+    el.style.height = "auto";
+    el.style.height = Math.min(el.scrollHeight, 120) + "px";
   };
 
   const handlePromptClick = (prompt: string) => {
@@ -120,13 +143,16 @@ export default function AndreaChat({ isOpen, onOpen, onClose, dimBubble }: Andre
       {/* Input area */}
       <div className="bg-card border-t border-[hsl(var(--card-border))] px-4 py-3 shrink-0">
         <form onSubmit={handleSend} className="flex items-center gap-2">
-          <input
+          <textarea
             ref={inputRef}
             value={inputValue}
-            onChange={(e) => setInputValue(e.target.value)}
+            onChange={handleInput}
+            onKeyDown={handleKeyDown}
             placeholder="Ask Andrea anything..."
             disabled={isLoading}
-            className="flex-1 text-sm px-3 py-2 rounded-lg border border-[hsl(var(--card-border))] bg-card text-card-foreground placeholder:text-card-foreground/40 focus:outline-none focus:ring-1 focus:ring-primary disabled:opacity-50"
+            rows={1}
+            className="flex-1 text-sm px-3 py-2 rounded-lg border border-[hsl(var(--card-border))] bg-card text-card-foreground placeholder:text-card-foreground/40 focus:outline-none focus:ring-1 focus:ring-primary disabled:opacity-50 resize-none overflow-y-auto"
+            style={{ maxHeight: 120 }}
           />
           <Button
             type="submit"
