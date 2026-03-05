@@ -171,6 +171,20 @@ export const useIntakeStore = create<IntakeStore>()((set, get) => ({
         // Merge server data with defaults (in case new fields were added)
         const merged = { ...defaultFormData, ...(intake_data as Partial<IntakeFormData>) };
         set({ submissionId: id, ...merged });
+
+        // Restore the generated plan if one exists — the signed URL comes from
+        // load-intake (service_role key) so it bypasses storage RLS for org users.
+        if (data.planSignedUrl) {
+          try {
+            const planResp = await fetch(data.planSignedUrl);
+            if (planResp.ok) {
+              const planText = await planResp.text();
+              if (planText) {
+                set({ generatedPlan: planText, planGeneratedAt: new Date().toISOString() });
+              }
+            }
+          } catch { /* ignore plan load errors — user can regenerate */ }
+        }
       } else {
         // No existing submission for this code — check localStorage for legacy data (one-time migration)
         try {

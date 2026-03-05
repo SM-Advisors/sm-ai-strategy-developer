@@ -168,7 +168,7 @@ const Admin = () => {
     setOrgSession({
       accessCode: code.code,
       accessCodeId: code.id,
-      orgUserId: adminOrgUser?.id || "admin",
+      orgUserId: adminOrgUser?.id || null,
       userName: adminUser?.email?.split("@")[0] || "Admin",
       userEmail: adminUser?.email || "",
       orgName: code.org_name || code.label || null,

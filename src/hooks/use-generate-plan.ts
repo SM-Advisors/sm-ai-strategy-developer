@@ -91,39 +91,27 @@ export function useGeneratePlan() {
       const fd = formData;
       (async () => {
         try {
-          let submissionId = existingSubmissionId;
+          if (!session?.accessCodeId) return;
 
-          if (submissionId) {
-            // Update existing org submission
-            await (supabase as any)
-              .from("submissions")
-              .update({
-                company_name: fd.companyName || null,
-                industry: fd.industry || null,
-                num_employees: fd.employeeCount || null,
-                intake_data: fd,
-              })
-              .eq("id", submissionId);
-          } else {
-            // Fallback: insert new submission
-            const { data: submission, error: insertErr } = await (supabase as any)
-              .from("submissions")
-              .insert({
-                company_name: fd.companyName || null,
-                industry: fd.industry || null,
-                num_employees: fd.employeeCount || null,
-                intake_data: fd,
-                access_code_id: session?.accessCodeId ?? null,
-              })
-              .select("id")
-              .single();
+          // Save intake data via edge function (uses service_role key — bypasses RLS).
+          // This handles both UPDATE (existing submission) and INSERT (new submission).
+          const { data: saveData, error: saveErr } = await supabase.functions.invoke("save-intake", {
+            body: {
+              accessCodeId: session.accessCodeId,
+              orgUserId: session.orgUserId ?? null,
+              fullIntakeData: fd,
+            },
+          });
+          if (saveErr) throw saveErr;
 
-            if (insertErr) throw insertErr;
-            submissionId = submission.id;
+          const submissionId = saveData?.submissionId ?? existingSubmissionId;
+          if (!submissionId) throw new Error("No submission ID returned from save-intake");
+
+          if (!existingSubmissionId) {
             useIntakeStore.getState().setSubmissionId(submissionId);
           }
 
-          // Upload plan markdown to storage
+          // Upload plan markdown to storage (public INSERT policy allows this)
           const fileName = `${submissionId}/plan.md`;
           const blob = new Blob([finalPlan], { type: "text/markdown" });
           const { error: uploadErr } = await (supabase as any).storage
@@ -132,16 +120,16 @@ export function useGeneratePlan() {
 
           if (uploadErr) throw uploadErr;
 
-          // Update submission with plan file path
-          await (supabase as any)
-            .from("submissions")
-            .update({ plan_file_path: fileName })
-            .eq("id", submissionId);
+          // Update plan_file_path via edge function (service_role key bypasses RLS)
+          await supabase.functions.invoke("save-intake", {
+            body: {
+              accessCodeId: session.accessCodeId,
+              planFilePath: fileName,
+            },
+          });
 
           // Update session state so index page shows "View Your Plan"
-          if (session) {
-            useAuthStore.getState().updateSessionSubmissionState(true, true);
-          }
+          useAuthStore.getState().updateSessionSubmissionState(true, true);
         } catch (err) {
           console.warn("Failed to save submission/plan:", err);
         }
