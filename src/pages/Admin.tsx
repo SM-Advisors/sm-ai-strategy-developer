@@ -19,6 +19,7 @@ import {
   ChevronUp,
   Eye,
   X,
+  Trash2,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -72,6 +73,7 @@ const Admin = () => {
   const queryClient = useQueryClient();
   const { isAdmin, adminUser, setOrgSession } = useAuthStore();
   const [labelInput, setLabelInput] = useState("");
+  const [deletingSubmissionId, setDeletingSubmissionId] = useState<string | null>(null);
   const [newCode, setNewCode] = useState<string | null>(null);
   const [copiedId, setCopiedId] = useState<string | null>(null);
   const [downloadingId, setDownloadingId] = useState<string | null>(null);
@@ -259,6 +261,24 @@ const Admin = () => {
     }
   };
 
+  const handleDeleteSubmission = async (submission: Submission) => {
+    if (!confirm(`Delete submission for "${submission.company_name || "Unknown"}"? This cannot be undone.`)) return;
+    setDeletingSubmissionId(submission.id);
+    try {
+      const { error } = await (supabase as any)
+        .from("submissions")
+        .delete()
+        .eq("id", submission.id);
+      if (error) throw error;
+      toast.success("Submission deleted");
+      await refetchSubmissions();
+    } catch {
+      toast.error("Failed to delete submission.");
+    } finally {
+      setDeletingSubmissionId(null);
+    }
+  };
+
   // Submission detail modal
   const SubmissionDetail = ({ submission, onClose }: { submission: Submission; onClose: () => void }) => (
     <div className="fixed inset-0 z-50 flex items-start justify-center bg-black/40 overflow-y-auto py-8 px-4">
@@ -401,7 +421,7 @@ const Admin = () => {
                 <Input
                   value={labelInput}
                   onChange={(e) => setLabelInput(e.target.value)}
-                  placeholder="Label (optional) — e.g. Acme Corp, Q1 Pilot"
+                  placeholder="Organization (optional) — e.g. Acme Corp, Q1 Pilot"
                   className="flex-1 text-sm"
                   disabled={generateMutation.isPending}
                   onKeyDown={(e) => {
@@ -465,7 +485,7 @@ const Admin = () => {
                 <div className="border border-border rounded-xl overflow-hidden">
                   <div className="grid grid-cols-[1fr_1fr_4rem_5rem_5rem_6rem] gap-4 px-5 py-3 bg-secondary/60 border-b border-border text-xs font-medium text-muted-foreground uppercase tracking-wider">
                     <span>Code</span>
-                    <span>Label</span>
+                    <span>Organization</span>
                     <span className="text-center">Uses</span>
                     <span className="text-center">Status</span>
                     <span className="text-center">Created</span>
@@ -659,6 +679,20 @@ const Admin = () => {
                           <RefreshCw className="w-3 h-3" />
                         )}
                         Regen
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="h-7 text-xs px-2 gap-1 text-destructive hover:text-destructive hover:bg-destructive/10"
+                        disabled={deletingSubmissionId === s.id}
+                        onClick={() => handleDeleteSubmission(s)}
+                      >
+                        {deletingSubmissionId === s.id ? (
+                          <Loader2 className="w-3 h-3 animate-spin" />
+                        ) : (
+                          <Trash2 className="w-3 h-3" />
+                        )}
+                        Delete
                       </Button>
                     </div>
                   </div>
