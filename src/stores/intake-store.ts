@@ -119,6 +119,8 @@ export const useIntakeStore = create<IntakeStore>()((set, get) => ({
   isLoadingFromServer: false,
   isSyncing: false,
   saveStatus: "idle" as SaveStatus,
+  _accessCodeId: null,
+  _orgUserId: null,
   andreaEditedFields: new Set<string>(),
 
   setCurrentStep: (step) => set({ currentStep: step }),
@@ -134,22 +136,16 @@ export const useIntakeStore = create<IntakeStore>()((set, get) => ({
         : s.andreaEditedFields,
     }));
 
-    // Get session from auth store (imported lazily to avoid circular deps)
-    try {
-      const { useAuthStore } = require("@/stores/auth-store");
-      const session = useAuthStore.getState().session;
-      if (session?.accessCodeId) {
-        scheduleSave(
-          field as string,
-          value,
-          oldValue,
-          session.accessCodeId,
-          session.orgUserId,
-          opts.isAndreaSuggestion ?? false
-        );
-      }
-    } catch {
-      // auth-store not available (e.g., during tests)
+    const { _accessCodeId, _orgUserId } = get();
+    if (_accessCodeId) {
+      scheduleSave(
+        field as string,
+        value,
+        oldValue,
+        _accessCodeId,
+        _orgUserId ?? undefined,
+        opts.isAndreaSuggestion ?? false
+      );
     }
   },
 
@@ -165,13 +161,10 @@ export const useIntakeStore = create<IntakeStore>()((set, get) => ({
     }
     set({ [field]: newArr as any });
 
-    try {
-      const { useAuthStore } = require("@/stores/auth-store");
-      const session = useAuthStore.getState().session;
-      if (session?.accessCodeId) {
-        scheduleSave(field as string, newArr, arr, session.accessCodeId, session.orgUserId, false);
-      }
-    } catch { /* ignore */ }
+    const { _accessCodeId, _orgUserId } = get();
+    if (_accessCodeId) {
+      scheduleSave(field as string, newArr, arr, _accessCodeId, _orgUserId ?? undefined, false);
+    }
   },
 
   setGeneratedPlan: (plan) => set({ generatedPlan: plan, planGeneratedAt: plan ? new Date().toISOString() : "" }),
