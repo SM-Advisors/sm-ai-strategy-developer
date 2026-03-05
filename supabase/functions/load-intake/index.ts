@@ -17,7 +17,7 @@ serve(async (req) => {
     const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
     if (!SUPABASE_URL || !SUPABASE_SERVICE_ROLE_KEY) throw new Error("Missing env vars");
 
-    const { accessCodeId } = await req.json();
+    const { accessCodeId, planVersionPath } = await req.json();
     if (!accessCodeId) {
       return new Response(
         JSON.stringify({ error: "accessCodeId required" }),
@@ -48,11 +48,11 @@ serve(async (req) => {
 
       if (versions && versions.length > 0) {
         planVersions = versions;
-        // Generate signed URL for the latest version
-        const latestPath = versions[0].file_path;
+        // If a specific version path was requested, use that; otherwise latest
+        const targetPath = planVersionPath || versions[0].file_path;
         const { data: signedData, error: signErr } = await supabase.storage
           .from("plans")
-          .createSignedUrl(latestPath, 300);
+          .createSignedUrl(targetPath, 300);
         if (!signErr && signedData?.signedUrl) {
           planSignedUrl = signedData.signedUrl;
         }
