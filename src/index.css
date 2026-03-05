@@ -93,6 +93,12 @@
   .plan-heading-serif {
     font-family: Arial, Helvetica, sans-serif;
   }
+
+  /* Force Arial throughout the plan document — no mixed fonts */
+  .plan-article,
+  .plan-article * {
+    font-family: Arial, Helvetica, sans-serif;
+  }
 }
 
 /* Print styles */

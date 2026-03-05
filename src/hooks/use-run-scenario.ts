@@ -1,5 +1,6 @@
 import { useState, useCallback } from "react";
 import { useIntakeStore } from "@/stores/intake-store";
+import { supabase } from "@/integrations/supabase/client";
 
 // --- Types ---
 
@@ -73,29 +74,15 @@ export function useRunScenario() {
       setError("");
 
       try {
-        const url = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/run-scenario`;
-        const resp = await fetch(url, {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
-          },
-          body: JSON.stringify({
-            planMarkdown,
-            stakeholder,
-            industry,
-            companyName,
-          }),
+        const { data, error: invokeError } = await supabase.functions.invoke("run-scenario", {
+          body: { planMarkdown, stakeholder, industry, companyName },
         });
 
-        if (!resp.ok) {
-          const errData = await resp.json().catch(() => ({}));
-          throw new Error(errData.error || `Error ${resp.status}`);
+        if (invokeError) {
+          throw new Error(invokeError.message || "Failed to run scenario");
         }
 
-        const data = await resp.json();
-
-        if (data.error) {
+        if (data?.error) {
           throw new Error(data.error);
         }
 

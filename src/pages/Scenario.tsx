@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { useIntakeStore } from "@/stores/intake-store";
 import { useRunScenario, STAKEHOLDER_OPTIONS, type StakeholderType } from "@/hooks/use-run-scenario";
@@ -7,6 +7,22 @@ import { ArrowLeft, FlaskConical, Loader2, ChevronDown } from "lucide-react";
 import ScenarioResultCard from "@/components/scenario/ScenarioResultCard";
 import AndreaScenarioChat from "@/components/andrea/AndreaScenarioChat";
 
+const LOADING_MESSAGES = [
+  "Reading the strategic plan...",
+  "Identifying stakeholder priorities...",
+  "Analyzing leadership alignment signals...",
+  "Evaluating risk posture and tolerance...",
+  "Mapping phase dependencies...",
+  "Assessing workforce readiness impact...",
+  "Reviewing governance implications...",
+  "Simulating budget scrutiny...",
+  "Drafting stakeholder concerns...",
+  "Formulating key questions...",
+  "Calibrating sentiment...",
+  "Building recommendations...",
+  "Finalizing the simulation...",
+];
+
 const Scenario = () => {
   const navigate = useNavigate();
   const { generatedPlan, companyName, industry } = useIntakeStore();
@@ -14,6 +30,8 @@ const Scenario = () => {
 
   const [selectedStakeholder, setSelectedStakeholder] = useState<StakeholderType>("Company Leadership");
   const [customIndustry, setCustomIndustry] = useState(industry || "");
+  const [loadingMessageIndex, setLoadingMessageIndex] = useState(0);
+  const loadingIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   // Redirect if no plan
   useEffect(() => {
@@ -32,6 +50,28 @@ const Scenario = () => {
       setCustomIndustry(industry);
     }
   }, [industry]);
+
+  // Cycle through loading messages while running
+  useEffect(() => {
+    if (isRunning) {
+      setLoadingMessageIndex(0);
+      loadingIntervalRef.current = setInterval(() => {
+        setLoadingMessageIndex((prev) => {
+          // Stop advancing at second-to-last message — don't show "Finalizing" until done
+          if (prev < LOADING_MESSAGES.length - 2) return prev + 1;
+          return prev;
+        });
+      }, 2800);
+    } else {
+      if (loadingIntervalRef.current) {
+        clearInterval(loadingIntervalRef.current);
+        loadingIntervalRef.current = null;
+      }
+    }
+    return () => {
+      if (loadingIntervalRef.current) clearInterval(loadingIntervalRef.current);
+    };
+  }, [isRunning]);
 
   const handleRunScenario = () => {
     if (!customIndustry.trim()) return;
@@ -140,7 +180,7 @@ const Scenario = () => {
               {isRunning ? (
                 <>
                   <Loader2 className="w-4 h-4 animate-spin" />
-                  Analyzing {currentStakeholder}...
+                  {LOADING_MESSAGES[loadingMessageIndex]}
                 </>
               ) : (
                 <>
@@ -246,9 +286,14 @@ const Scenario = () => {
         {/* Loading state */}
         {isRunning && results.length === 0 && (
           <div className="text-center py-16">
-            <Loader2 className="w-10 h-10 mx-auto mb-4 animate-spin text-primary/40" />
-            <p className="text-sm text-muted-foreground">Simulating {currentStakeholder} perspective...</p>
-            <p className="text-xs text-muted-foreground mt-1">This typically takes 15-30 seconds.</p>
+            <Loader2 className="w-10 h-10 mx-auto mb-5 animate-spin text-primary/40" />
+            <p className="text-sm font-medium text-foreground mb-1">
+              Simulating {currentStakeholder} perspective
+            </p>
+            <p className="text-sm text-primary transition-all duration-500">
+              {LOADING_MESSAGES[loadingMessageIndex]}
+            </p>
+            <p className="text-xs text-muted-foreground mt-3">This typically takes 15–30 seconds.</p>
           </div>
         )}
 
