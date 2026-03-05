@@ -35,21 +35,40 @@ serve(async (req) => {
 
     if (error) throw error;
 
-    // If there's a saved plan, generate a short-lived signed URL so the client
-    // can download the plan text and restore it in memory (storage RLS blocks
-    // anon/org-user direct access to the plans bucket).
+    // Load plan versions for this submission
+    let planVersions: Array<{ version_number: number; file_path: string; label: string; created_at: string }> = [];
     let planSignedUrl: string | null = null;
-    if (submission?.plan_file_path) {
-      const { data: signedData, error: signErr } = await supabase.storage
-        .from("plans")
-        .createSignedUrl(submission.plan_file_path, 300); // 5-minute TTL
-      if (!signErr && signedData?.signedUrl) {
-        planSignedUrl = signedData.signedUrl;
+
+    if (submission) {
+      const { data: versions } = await supabase
+        .from("plan_versions")
+        .select("version_number, file_path, label, created_at")
+        .eq("submission_id", submission.id)
+        .order("version_number", { ascending: false });
+
+      if (versions && versions.length > 0) {
+        planVersions = versions;
+        // Generate signed URL for the latest version
+        const latestPath = versions[0].file_path;
+        const { data: signedData, error: signErr } = await supabase.storage
+          .from("plans")
+          .createSignedUrl(latestPath, 300);
+        if (!signErr && signedData?.signedUrl) {
+          planSignedUrl = signedData.signedUrl;
+        }
+      } else if (submission.plan_file_path) {
+        // Legacy: no versioned entries but plan_file_path exists
+        const { data: signedData, error: signErr } = await supabase.storage
+          .from("plans")
+          .createSignedUrl(submission.plan_file_path, 300);
+        if (!signErr && signedData?.signedUrl) {
+          planSignedUrl = signedData.signedUrl;
+        }
       }
     }
 
     return new Response(
-      JSON.stringify({ submission: submission ?? null, planSignedUrl }),
+      JSON.stringify({ submission: submission ?? null, planSignedUrl, planVersions }),
       { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
   } catch (e) {
