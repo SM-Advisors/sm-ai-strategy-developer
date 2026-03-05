@@ -58,6 +58,13 @@ async function performSave(
   }
 }
 
+export interface PlanVersion {
+  version_number: number;
+  file_path: string;
+  label: string;
+  created_at: string;
+}
+
 interface IntakeStore extends IntakeFormData {
   currentStep: number;
   generatedPlan: string;
@@ -72,6 +79,9 @@ interface IntakeStore extends IntakeFormData {
   // Session context for saving (set during loadFromServer)
   _accessCodeId: string | null;
   _orgUserId: string | null;
+  // Plan versioning
+  planVersions: PlanVersion[];
+  currentPlanVersion: number | null;
   // Andrea tracking
   andreaEditedFields: Set<string>;
 
@@ -87,6 +97,10 @@ interface IntakeStore extends IntakeFormData {
   loadFromServer: (accessCodeId: string, orgUserId?: string) => Promise<void>;
   setSubmissionId: (id: string | null) => void;
   clearAndreaEdit: (fieldId: string) => void;
+  // Plan versioning
+  setPlanVersions: (versions: PlanVersion[]) => void;
+  setCurrentPlanVersion: (version: number) => void;
+  loadPlanVersion: (version: PlanVersion) => Promise<void>;
 }
 
 const formDataKeys = Object.keys(defaultFormData) as (keyof IntakeFormData)[];
