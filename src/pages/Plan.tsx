@@ -1,9 +1,9 @@
 import { useNavigate } from "react-router-dom";
-import { useIntakeStore } from "@/stores/intake-store";
+import { useIntakeStore, PlanVersion } from "@/stores/intake-store";
 import { useAuthStore } from "@/stores/auth-store";
 import { useGeneratePlan } from "@/hooks/use-generate-plan";
 import { Button } from "@/components/ui/button";
-import { ArrowLeft, FileText, FileDown, FileType, RefreshCw, FlaskConical, Pencil, Check, X } from "lucide-react";
+import { ArrowLeft, FileText, FileDown, FileType, RefreshCw, FlaskConical, Pencil, Check, X, ChevronDown, History } from "lucide-react";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import PlanTocSidebar from "@/components/plan/PlanTocSidebar";
@@ -12,16 +12,27 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import AndreaPlanReview from "@/components/andrea/AndreaPlanReview";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 
 const Plan = () => {
   const navigate = useNavigate();
-  const { generatedPlan, companyName, submissionId, setGeneratedPlan } = useIntakeStore();
+  const {
+    generatedPlan, companyName, submissionId, setGeneratedPlan,
+    planVersions, currentPlanVersion, setPlanVersions, setCurrentPlanVersion, loadPlanVersion,
+    _accessCodeId,
+  } = useIntakeStore();
   const { session } = useAuthStore();
   const { generate } = useGeneratePlan();
   const [activeHeading, setActiveHeading] = useState<string>("");
   const [isEditMode, setIsEditMode] = useState(false);
   const [editDraft, setEditDraft] = useState("");
   const [isSavingEdit, setIsSavingEdit] = useState(false);
+  const [isLoadingVersion, setIsLoadingVersion] = useState(false);
   const contentRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
@@ -100,34 +111,73 @@ const Plan = () => {
       // Update in-memory store immediately
       setGeneratedPlan(editDraft);
 
-      // Persist to storage if we have a submission ID
+      // Persist as a new version
       const sid = submissionId;
       if (sid) {
-        const fileName = `${sid}/plan.md`;
+        const nextVersion = planVersions.length > 0
+          ? Math.max(...planVersions.map(v => v.version_number)) + 1
+          : 1;
+        const fileName = `${sid}/plan-v${nextVersion}.md`;
         const blob = new Blob([editDraft], { type: "text/markdown" });
         const { error: uploadErr } = await (supabase as any).storage
           .from("plans")
           .upload(fileName, blob, { contentType: "text/markdown", upsert: true });
 
-        if (uploadErr) {
-          // Storage upsert failed (likely RLS on update) — try via edge function
-          if (session?.accessCodeId) {
-            await supabase.functions.invoke("save-intake", {
-              body: { accessCodeId: session.accessCodeId, planFilePath: fileName },
-            });
-          }
+        if (uploadErr) throw uploadErr;
+
+        // Create version record
+        await (supabase as any)
+          .from("plan_versions")
+          .insert({
+            submission_id: sid,
+            version_number: nextVersion,
+            file_path: fileName,
+            label: "Edited",
+          });
+
+        // Update plan_file_path
+        if (session?.accessCodeId || _accessCodeId) {
+          await supabase.functions.invoke("save-intake", {
+            body: { accessCodeId: session?.accessCodeId || _accessCodeId, planFilePath: fileName },
+          });
         }
+
+        // Update local version state
+        const newVersion: PlanVersion = {
+          version_number: nextVersion,
+          file_path: fileName,
+          label: "Edited",
+          created_at: new Date().toISOString(),
+        };
+        setPlanVersions([newVersion, ...planVersions]);
+        setCurrentPlanVersion(nextVersion);
       }
 
-      toast.success("Plan edits saved");
+      toast.success("Plan saved as new version");
       setIsEditMode(false);
     } catch (err) {
       console.warn("Failed to persist plan edits:", err);
-      // Store is already updated in memory — edits aren't lost
       toast.success("Plan updated (will persist on next save)");
       setIsEditMode(false);
     } finally {
       setIsSavingEdit(false);
+    }
+  };
+
+  const handleSwitchVersion = async (version: PlanVersion) => {
+    if (version.version_number === currentPlanVersion) return;
+    setIsLoadingVersion(true);
+    await loadPlanVersion(version);
+    setIsLoadingVersion(false);
+    toast.success(`Switched to v${version.version_number}`);
+  };
+
+  const formatVersionDate = (dateStr: string) => {
+    try {
+      const d = new Date(dateStr);
+      return d.toLocaleDateString("en-US", { month: "short", day: "numeric", hour: "numeric", minute: "2-digit" });
+    } catch {
+      return "";
     }
   };
 
@@ -149,11 +199,53 @@ const Plan = () => {
             <span className="text-sm font-medium text-foreground truncate">
               {companyName || "Organization"} — AI Strategic Plan
             </span>
+
+            {/* Version selector */}
+            {planVersions.length > 1 && (
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button
+                    variant="outline-light"
+                    size="sm"
+                    className="gap-1.5 text-xs px-2 sm:px-3 shrink-0"
+                    disabled={isLoadingVersion}
+                  >
+                    <History className="w-3.5 h-3.5" />
+                    <span className="hidden sm:inline">v{currentPlanVersion ?? planVersions[0]?.version_number}</span>
+                    <ChevronDown className="w-3 h-3" />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="start" className="w-64">
+                  {planVersions.map((v) => (
+                    <DropdownMenuItem
+                      key={v.version_number}
+                      onClick={() => handleSwitchVersion(v)}
+                      className={currentPlanVersion === v.version_number ? "bg-primary/5 font-medium" : ""}
+                    >
+                      <div className="flex items-center justify-between w-full gap-2">
+                        <span className="text-sm">
+                          v{v.version_number}
+                          <span className="text-muted-foreground font-normal ml-1.5">
+                            — {v.label}
+                          </span>
+                        </span>
+                        <span className="text-xs text-muted-foreground shrink-0">
+                          {formatVersionDate(v.created_at)}
+                        </span>
+                      </div>
+                    </DropdownMenuItem>
+                  ))}
+                </DropdownMenuContent>
+              </DropdownMenu>
+            )}
+
+            {planVersions.length === 1 && (
+              <span className="text-xs text-muted-foreground shrink-0">v1</span>
+            )}
           </div>
 
           <div className="flex items-center gap-1 sm:gap-2 shrink-0">
             {isEditMode ? (
-              /* Edit mode controls */
               <>
                 <Button
                   variant="ghost"
@@ -173,11 +265,10 @@ const Plan = () => {
                   disabled={isSavingEdit}
                 >
                   <Check className="w-3.5 h-3.5" />
-                  <span className="hidden sm:inline">{isSavingEdit ? "Saving..." : "Save Edits"}</span>
+                  <span className="hidden sm:inline">{isSavingEdit ? "Saving..." : "Save as New Version"}</span>
                 </Button>
               </>
             ) : (
-              /* Normal controls */
               <>
                 <Button
                   variant="ghost"
@@ -259,8 +350,7 @@ const Plan = () => {
       {isEditMode && (
         <div className="print-hidden bg-amber-50 border-b border-amber-200 px-4 py-2 text-center">
           <p className="text-xs text-amber-800">
-            You are editing the plan directly. Changes here will be saved and reflected in all exports.
-            Any edits made to the plan should also be updated in the intake form to keep your data consistent.
+            You are editing the plan directly. Saving will create a new version — previous versions remain accessible via the version dropdown.
           </p>
         </div>
       )}

@@ -58,6 +58,13 @@ async function performSave(
   }
 }
 
+export interface PlanVersion {
+  version_number: number;
+  file_path: string;
+  label: string;
+  created_at: string;
+}
+
 interface IntakeStore extends IntakeFormData {
   currentStep: number;
   generatedPlan: string;
@@ -72,6 +79,9 @@ interface IntakeStore extends IntakeFormData {
   // Session context for saving (set during loadFromServer)
   _accessCodeId: string | null;
   _orgUserId: string | null;
+  // Plan versioning
+  planVersions: PlanVersion[];
+  currentPlanVersion: number | null;
   // Andrea tracking
   andreaEditedFields: Set<string>;
 
@@ -87,6 +97,10 @@ interface IntakeStore extends IntakeFormData {
   loadFromServer: (accessCodeId: string, orgUserId?: string) => Promise<void>;
   setSubmissionId: (id: string | null) => void;
   clearAndreaEdit: (fieldId: string) => void;
+  // Plan versioning
+  setPlanVersions: (versions: PlanVersion[]) => void;
+  setCurrentPlanVersion: (version: number) => void;
+  loadPlanVersion: (version: PlanVersion) => Promise<void>;
 }
 
 const formDataKeys = Object.keys(defaultFormData) as (keyof IntakeFormData)[];
@@ -121,6 +135,8 @@ export const useIntakeStore = create<IntakeStore>()((set, get) => ({
   saveStatus: "idle" as SaveStatus,
   _accessCodeId: null,
   _orgUserId: null,
+  planVersions: [] as PlanVersion[],
+  currentPlanVersion: null,
   andreaEditedFields: new Set<string>(),
 
   setCurrentStep: (step) => set({ currentStep: step }),
@@ -177,6 +193,32 @@ export const useIntakeStore = create<IntakeStore>()((set, get) => ({
 
   setSubmissionId: (id) => set({ submissionId: id }),
 
+  setPlanVersions: (versions) => set({ planVersions: versions }),
+  setCurrentPlanVersion: (version) => set({ currentPlanVersion: version }),
+  loadPlanVersion: async (version: PlanVersion) => {
+    try {
+      const { _accessCodeId } = get();
+      if (!_accessCodeId) return;
+      // Get signed URL via load-intake won't work for arbitrary versions,
+      // so we use a direct edge function call
+      const { data, error } = await supabase.functions.invoke("load-intake", {
+        body: { accessCodeId: _accessCodeId, planVersionPath: version.file_path },
+      });
+      if (error) throw error;
+      if (data?.planSignedUrl) {
+        const resp = await fetch(data.planSignedUrl);
+        if (resp.ok) {
+          const text = await resp.text();
+          if (text) {
+            set({ generatedPlan: text, currentPlanVersion: version.version_number, planGeneratedAt: version.created_at });
+          }
+        }
+      }
+    } catch (err) {
+      console.warn("Failed to load plan version:", err);
+    }
+  },
+
   clearAndreaEdit: (fieldId) => set((s) => {
     const next = new Set(s.andreaEditedFields);
     next.delete(fieldId);
@@ -200,6 +242,8 @@ export const useIntakeStore = create<IntakeStore>()((set, get) => ({
       submissionId: null,
       generatedPlan: "",
       planGeneratedAt: "",
+      planVersions: [],
+      currentPlanVersion: null,
       andreaEditedFields: new Set<string>(),
       _accessCodeId: accessCodeId,
       _orgUserId: orgUserId ?? null,
@@ -215,6 +259,12 @@ export const useIntakeStore = create<IntakeStore>()((set, get) => ({
         const { id, intake_data } = data.submission;
         const merged = { ...defaultFormData, ...(intake_data as Partial<IntakeFormData>) };
         set({ submissionId: id, ...merged });
+
+        // Store plan versions
+        const versions = data.planVersions ?? [];
+        if (versions.length > 0) {
+          set({ planVersions: versions, currentPlanVersion: versions[0].version_number });
+        }
 
         if (data.planSignedUrl) {
           try {
