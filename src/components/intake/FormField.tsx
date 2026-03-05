@@ -26,7 +26,7 @@ const FormField = ({ field, error, questionNumber }: FormFieldProps) => {
   const autoResize = useCallback((el: HTMLTextAreaElement | null) => {
     if (!el) return;
     el.style.height = "auto";
-    el.style.height = Math.max(el.scrollHeight, 72) + "px";
+    el.style.height = el.scrollHeight + "px";
   }, []);
 
   useEffect(() => {
@@ -116,7 +116,8 @@ const FormField = ({ field, error, questionNumber }: FormFieldProps) => {
             handleChange(e.target.value);
             autoResize(e.target);
           }}
-          style={{ minHeight: "72px", overflow: "hidden" }}
+          style={{ overflow: "hidden" }}
+          rows={1}
           className={cn(
             "bg-card border-[hsl(var(--card-border))] text-card-foreground placeholder:text-muted-foreground focus:ring-primary resize-none",
             error && "border-destructive"
