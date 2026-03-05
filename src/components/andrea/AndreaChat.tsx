@@ -7,8 +7,15 @@ import AndreaSuggestedPrompts from "./AndreaSuggestedPrompts";
 import andreaCoachImg from "@/assets/andrea-coach.png";
 import andreaCoach2Img from "@/assets/andrea-coach2.png";
 
-export default function AndreaChat() {
-  const [isOpen, setIsOpen] = useState(false);
+interface AndreaChatProps {
+  isOpen: boolean;
+  onOpen: () => void;
+  onClose: () => void;
+  /** When true, the bubble fades to avoid overlapping UI elements */
+  dimBubble?: boolean;
+}
+
+export default function AndreaChat({ isOpen, onOpen, onClose, dimBubble }: AndreaChatProps) {
   const [inputValue, setInputValue] = useState("");
   const inputRef = useRef<HTMLInputElement>(null);
 
@@ -26,7 +33,7 @@ export default function AndreaChat() {
   // Focus input when panel opens
   useEffect(() => {
     if (isOpen) {
-      setTimeout(() => inputRef.current?.focus(), 100);
+      setTimeout(() => inputRef.current?.focus(), 150);
     }
   }, [isOpen]);
 
@@ -45,8 +52,10 @@ export default function AndreaChat() {
   if (!isOpen) {
     return (
       <button
-        onClick={() => setIsOpen(true)}
-        className="fixed bottom-6 right-6 z-[9999] group"
+        onClick={onOpen}
+        className={`fixed bottom-6 right-6 z-[9999] group transition-opacity duration-300 ${
+          dimBubble ? "opacity-20 hover:opacity-80" : "opacity-100"
+        }`}
         aria-label="Open Andrea AI Assistant"
       >
         <div className="relative">
@@ -55,7 +64,6 @@ export default function AndreaChat() {
             alt="Andrea"
             className="h-24 w-24 rounded-full shadow-lg ring-2 ring-primary/30 group-hover:ring-primary/60 group-hover:scale-105 transition-all duration-300 object-cover bg-white"
           />
-          {/* Notification dot */}
           {messages.length <= 1 && (
             <div className="absolute -top-1 -right-1 w-4 h-4 rounded-full bg-primary animate-pulse" />
           )}
@@ -64,11 +72,11 @@ export default function AndreaChat() {
     );
   }
 
-  // --- Expanded chat panel ---
+  // --- Expanded side panel (slides in from right, full screen height) ---
   return (
-    <div className="fixed bottom-0 right-0 z-[9999] w-full h-[85vh] sm:bottom-6 sm:right-6 sm:w-[400px] sm:h-[520px] flex flex-col rounded-none sm:rounded-xl shadow-2xl overflow-hidden border border-border">
-      {/* Header — dark navy */}
-      <div className="bg-background px-4 py-3 flex items-center gap-3 shrink-0">
+    <div className="fixed right-0 top-0 z-[9998] h-screen w-full sm:w-[400px] flex flex-col shadow-2xl border-l border-border bg-background">
+      {/* Header */}
+      <div className="bg-background px-4 py-3 flex items-center gap-3 shrink-0 border-b border-border">
         <img
           src={andreaCoach2Img}
           alt="Andrea"
@@ -83,7 +91,7 @@ export default function AndreaChat() {
           </p>
         </div>
         <button
-          onClick={() => setIsOpen(false)}
+          onClick={onClose}
           className="text-foreground/60 hover:text-foreground p-1 rounded-md hover:bg-foreground/10 transition-colors"
           aria-label="Close chat"
         >
@@ -91,7 +99,7 @@ export default function AndreaChat() {
         </button>
       </div>
 
-      {/* Messages area — white card background */}
+      {/* Messages area */}
       <div className="flex-1 bg-card overflow-hidden flex flex-col min-h-0">
         <AndreaChatMessages
           messages={messages}
@@ -102,7 +110,6 @@ export default function AndreaChat() {
           isLoading={isLoading}
         />
 
-        {/* Suggested prompts */}
         <AndreaSuggestedPrompts
           prompts={latestPrompts}
           onSelect={handlePromptClick}

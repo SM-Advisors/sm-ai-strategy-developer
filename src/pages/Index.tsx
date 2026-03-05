@@ -1,7 +1,7 @@
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import { ArrowRight, ClipboardList, Brain, FileText } from "lucide-react";
-import { useEffect } from "react";
+import { ArrowRight, ClipboardList, Brain, FileText, RefreshCw } from "lucide-react";
+import { useEffect, useState } from "react";
 import AdminBar from "@/components/AdminBar";
 import AccessCodeEntry from "@/components/AccessCodeEntry";
 import { useAuthStore } from "@/stores/auth-store";
@@ -29,6 +29,9 @@ const Index = () => {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const { hasAccess, session, isAdmin, clearOrgSession } = useAuthStore();
+  // Admins always have hasAccess=true even without a session, so we need a
+  // separate state to show the code entry form when they want to switch orgs.
+  const [showSwitchOrg, setShowSwitchOrg] = useState(false);
 
   const redirected = searchParams.get("redirect") === "true";
   const hasExisting = session?.hasExistingSubmission || false;
@@ -37,6 +40,27 @@ const Index = () => {
   useEffect(() => {
     document.title = "AI Strategic Planner — Institutional-Grade AI Strategy";
   }, []);
+
+  // Reset switch-org view when a session is established (code entered successfully)
+  useEffect(() => {
+    if (session) setShowSwitchOrg(false);
+  }, [session]);
+
+  const assessmentLabel = hasPlan
+    ? "Update Assessment"
+    : hasExisting
+    ? "Continue Assessment"
+    : "Begin Assessment";
+
+  const handleSwitchOrg = () => {
+    if (isAdmin) {
+      // Admins retain access after clearing, so show the inline code entry form
+      setShowSwitchOrg(true);
+    } else {
+      // Non-admins lose hasAccess after clearing, which naturally reveals AccessCodeEntry
+      clearOrgSession();
+    }
+  };
 
   return (
     <div className="h-screen hero-gradient flex flex-col overflow-hidden">
@@ -63,39 +87,67 @@ const Index = () => {
           <div className="flex flex-col items-center gap-2">
             {hasAccess ? (
               <>
-                <Button
-                  variant="hero"
-                  size="lg"
-                  onClick={() => navigate("/intake")}
-                  className="text-base px-10 py-5 rounded-lg"
-                >
-                  {hasExisting ? "Continue Assessment" : "Begin Assessment"}
-                  <ArrowRight className="ml-2 w-5 h-5" />
-                </Button>
-                {hasPlan && (
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => navigate("/plan")}
-                    className="text-xs"
-                  >
-                    View Your Strategic Plan
-                  </Button>
-                )}
-                {session && (
-                  <div className="flex flex-col items-center gap-1">
-                    <p className="text-xs text-muted-foreground">
-                      Signed in as {session.userName}
-                      {session.orgName ? ` · ${session.orgName}` : ""}
+                {showSwitchOrg ? (
+                  <div className="space-y-2">
+                    <p className="text-xs text-muted-foreground text-center">
+                      Enter a code to switch your organization.
                     </p>
+                    <AccessCodeEntry />
                     <button
                       type="button"
-                      onClick={() => clearOrgSession()}
-                      className="text-xs text-muted-foreground/60 hover:text-foreground transition-colors underline"
+                      onClick={() => setShowSwitchOrg(false)}
+                      className="w-full text-xs text-muted-foreground hover:text-foreground transition-colors text-center py-1"
                     >
-                      Switch organization
+                      ← Cancel
                     </button>
                   </div>
+                ) : (
+                  <>
+                    <Button
+                      variant="hero"
+                      size="lg"
+                      onClick={() => navigate("/intake")}
+                      className="text-base px-10 py-5 rounded-lg"
+                    >
+                      {assessmentLabel}
+                      <ArrowRight className="ml-2 w-5 h-5" />
+                    </Button>
+                    {hasPlan && (
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => navigate("/plan")}
+                        className="text-xs"
+                      >
+                        View Your Strategic Plan
+                      </Button>
+                    )}
+                    <div className="flex flex-col items-center gap-0.5">
+                      {session?.orgName ? (
+                        <p className="text-xs text-muted-foreground">
+                          Organization: <span className="font-medium text-foreground">{session.orgName}</span>
+                          {session.userName ? ` · ${session.userName}` : ""}
+                        </p>
+                      ) : isAdmin ? (
+                        <p className="text-xs text-muted-foreground">
+                          Signed in as <span className="font-medium text-foreground">Admin</span>
+                          {" · No organization selected"}
+                        </p>
+                      ) : session ? (
+                        <p className="text-xs text-muted-foreground">
+                          Signed in as {session.userName}
+                        </p>
+                      ) : null}
+                      <button
+                        type="button"
+                        onClick={handleSwitchOrg}
+                        className="text-xs text-muted-foreground/60 hover:text-foreground transition-colors flex items-center gap-1 underline"
+                      >
+                        <RefreshCw className="w-3 h-3" />
+                        {session?.orgName ? "Switch organization" : "Select organization"}
+                      </button>
+                    </div>
+                  </>
                 )}
               </>
             ) : (
