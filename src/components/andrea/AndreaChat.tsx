@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect, useCallback } from "react";
-import { X, Send } from "lucide-react";
+import { X, Send, Square } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useAndreaChat } from "@/hooks/use-andrea-chat";
 import AndreaChatMessages from "./AndreaChatMessages";
@@ -26,6 +26,7 @@ export default function AndreaChat({ isOpen, onOpen, onClose, dimBubble }: Andre
     appliedEdits,
     dismissedEdits,
     sendMessage,
+    cancelRequest,
     applyFieldEdit,
     dismissFieldEdit,
   } = useAndreaChat();
@@ -154,14 +155,27 @@ export default function AndreaChat({ isOpen, onOpen, onClose, dimBubble }: Andre
             className="flex-1 text-sm px-3 py-2 rounded-lg border border-[hsl(var(--card-border))] bg-card text-card-foreground placeholder:text-card-foreground/40 focus:outline-none focus:ring-1 focus:ring-primary disabled:opacity-50 resize-none overflow-y-auto"
             style={{ maxHeight: 120 }}
           />
-          <Button
-            type="submit"
-            size="icon"
-            className="h-9 w-9 shrink-0"
-            disabled={!inputValue.trim() || isLoading}
-          >
-            <Send className="h-4 w-4" />
-          </Button>
+          {isLoading ? (
+            <Button
+              type="button"
+              size="icon"
+              variant="destructive"
+              className="h-9 w-9 shrink-0"
+              onClick={cancelRequest}
+              aria-label="Stop generating"
+            >
+              <Square className="h-3.5 w-3.5" />
+            </Button>
+          ) : (
+            <Button
+              type="submit"
+              size="icon"
+              className="h-9 w-9 shrink-0"
+              disabled={!inputValue.trim()}
+            >
+              <Send className="h-4 w-4" />
+            </Button>
+          )}
         </form>
       </div>
     </div>
