@@ -41,7 +41,7 @@ const Intake = () => {
   // Load shared form data from server on mount
   useEffect(() => {
     if (session?.accessCodeId) {
-      loadFromServer(session.accessCodeId);
+      loadFromServer(session.accessCodeId, session.orgUserId);
     }
   }, [session?.accessCodeId]);
 
