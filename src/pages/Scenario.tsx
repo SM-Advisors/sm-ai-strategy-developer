@@ -268,7 +268,15 @@ const Scenario = () => {
             {/* Individual Results */}
             <div className="space-y-6">
               {results.map((result) => (
-                <ScenarioResultCard key={result.stakeholder} result={result} />
+                <ScenarioResultCard
+                  key={result.stakeholder}
+                  result={result}
+                  onRegenerate={() => {
+                    setSelectedStakeholder(result.stakeholder as StakeholderType);
+                    runScenario(result.stakeholder, customIndustry.trim() || result.industry);
+                  }}
+                  isRegenerating={isRunning && currentStakeholder === result.stakeholder}
+                />
               ))}
             </div>
           </div>
