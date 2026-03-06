@@ -1,4 +1,4 @@
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect } from "react";
 import { useIntakeStore } from "@/stores/intake-store";
 import { supabase } from "@/integrations/supabase/client";
 
@@ -56,6 +56,59 @@ export function useRunScenario() {
   const [isRunning, setIsRunning] = useState(false);
   const [currentStakeholder, setCurrentStakeholder] = useState<string>("");
   const [error, setError] = useState<string>("");
+  const [isLoadingFromDb, setIsLoadingFromDb] = useState(false);
+
+  /** Load persisted scenario results from the database on mount */
+  useEffect(() => {
+    const submissionId = useIntakeStore.getState().submissionId;
+    if (!submissionId) return;
+
+    setIsLoadingFromDb(true);
+    supabase
+      .from("scenario_results")
+      .select("stakeholder, industry, result_data")
+      .eq("submission_id", submissionId)
+      .then(({ data, error: queryError }) => {
+        if (queryError) {
+          console.warn("Failed to load scenario results:", queryError);
+        } else if (data && data.length > 0) {
+          const loaded: ScenarioResult[] = data.map((row: any) => ({
+            ...(row.result_data as ScenarioResult),
+            stakeholder: row.stakeholder,
+            industry: row.industry,
+          }));
+          setResults(loaded);
+        }
+        setIsLoadingFromDb(false);
+      });
+  }, []);
+
+  /** Save a result to the database */
+  const saveResultToDb = useCallback(async (result: ScenarioResult) => {
+    const submissionId = useIntakeStore.getState().submissionId;
+    if (!submissionId) return;
+
+    try {
+      const { error: upsertError } = await supabase
+        .from("scenario_results")
+        .upsert(
+          {
+            submission_id: submissionId,
+            stakeholder: result.stakeholder,
+            industry: result.industry,
+            result_data: result as any,
+            updated_at: new Date().toISOString(),
+          },
+          { onConflict: "submission_id,stakeholder" }
+        );
+
+      if (upsertError) {
+        console.warn("Failed to save scenario result:", upsertError);
+      }
+    } catch (err) {
+      console.warn("Failed to save scenario result:", err);
+    }
+  }, []);
 
   /** Run a scenario for a single stakeholder */
   const runScenario = useCallback(
@@ -88,10 +141,12 @@ export function useRunScenario() {
 
         const result: ScenarioResult = data;
         setResults((prev) => {
-          // Replace if same stakeholder already exists
           const filtered = prev.filter((r) => r.stakeholder !== stakeholder);
           return [...filtered, result];
         });
+
+        // Persist to database
+        await saveResultToDb(result);
 
         return result;
       } catch (err: any) {
@@ -103,18 +158,31 @@ export function useRunScenario() {
         setCurrentStakeholder("");
       }
     },
-    []
+    [saveResultToDb]
   );
 
-  /** Clear all results */
-  const clearResults = useCallback(() => {
+  /** Clear all results (also from DB) */
+  const clearResults = useCallback(async () => {
     setResults([]);
     setError("");
+
+    const submissionId = useIntakeStore.getState().submissionId;
+    if (submissionId) {
+      try {
+        await supabase
+          .from("scenario_results")
+          .delete()
+          .eq("submission_id", submissionId);
+      } catch (err) {
+        console.warn("Failed to clear scenario results from DB:", err);
+      }
+    }
   }, []);
 
   return {
     results,
     isRunning,
+    isLoadingFromDb,
     currentStakeholder,
     error,
     runScenario,
