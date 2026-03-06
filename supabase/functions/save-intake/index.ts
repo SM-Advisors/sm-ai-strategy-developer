@@ -22,6 +22,8 @@ serve(async (req) => {
       fullIntakeData, planFilePath,
       // Plan versioning: insert a new plan_versions record
       planVersionData,
+      // Scenario: upsert a single scenario result for a submission
+      scenarioResultData,
       // Scenario: clear all scenario results for a submission
       clearScenarioResults,
     } = await req.json();
@@ -162,7 +164,7 @@ serve(async (req) => {
         last_edited_by: orgUserId ?? null,
         last_edited_at: new Date().toISOString(),
       };
-    } else if (planVersionData || clearScenarioResults) {
+    } else if (planVersionData || scenarioResultData || clearScenarioResults) {
       // Operations that require an existing submission
       const { data: existingForOp } = await supabase
         .from("submissions")
@@ -174,6 +176,22 @@ serve(async (req) => {
         return new Response(
           JSON.stringify({ error: "No submission found for this access code" }),
           { status: 404, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+
+      if (scenarioResultData) {
+        const { stakeholder, industry, result_data } = scenarioResultData as {
+          stakeholder: string; industry: string; result_data: Record<string, unknown>;
+        };
+        await supabase.from("scenario_results").upsert(
+          {
+            submission_id: existingForOp.id,
+            stakeholder,
+            industry,
+            result_data,
+            updated_at: new Date().toISOString(),
+          },
+          { onConflict: "submission_id,stakeholder" }
         );
       }
 

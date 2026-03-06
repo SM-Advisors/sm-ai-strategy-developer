@@ -6,6 +6,8 @@ import { Button } from "@/components/ui/button";
 import { ArrowLeft, FlaskConical, Loader2, ChevronDown } from "lucide-react";
 import ScenarioResultCard from "@/components/scenario/ScenarioResultCard";
 import AndreaScenarioChat from "@/components/andrea/AndreaScenarioChat";
+import ReactMarkdown from "react-markdown";
+import remarkGfm from "remark-gfm";
 
 const LOADING_MESSAGES = [
   "Reading the strategic plan...",
@@ -26,7 +28,7 @@ const LOADING_MESSAGES = [
 const Scenario = () => {
   const navigate = useNavigate();
   const { generatedPlan, companyName, industry } = useIntakeStore();
-  const { results, isRunning, isLoadingFromDb, currentStakeholder, error, runScenario, clearResults } = useRunScenario();
+  const { results, isRunning, isLoadingFromDb, currentStakeholder, streamingStakeholder, streamingText, error, runScenario, clearResults } = useRunScenario();
 
   const [selectedStakeholder, setSelectedStakeholder] = useState<StakeholderType>("Company Leadership");
   const [customIndustry, setCustomIndustry] = useState(industry || "");
@@ -229,6 +231,31 @@ const Scenario = () => {
                 + {stakeholder}
               </Button>
             ))}
+          </div>
+        )}
+
+        {/* Streaming Preview */}
+        {streamingStakeholder && streamingText && (
+          <div className="bg-card rounded-xl border border-primary/20 card-elevated overflow-hidden">
+            <div className="px-5 py-4 border-b border-primary/20 bg-primary/5 flex items-center gap-3">
+              <div className="w-2 h-2 rounded-full bg-primary animate-pulse" />
+              <h3 className="font-semibold text-card-foreground">{streamingStakeholder}</h3>
+              <span className="text-xs text-muted-foreground">Generating narrative...</span>
+            </div>
+            <div className="px-6 py-5">
+              <div className="prose prose-sm max-w-none
+                prose-headings:font-serif prose-headings:text-card-foreground
+                prose-h1:text-xl prose-h1:mb-2 prose-h1:mt-0
+                prose-h2:text-base prose-h2:mb-1 prose-h2:mt-4
+                prose-h3:text-sm prose-h3:font-semibold prose-h3:mb-1 prose-h3:mt-4 prose-h3:text-gray-700
+                prose-p:text-sm prose-p:text-gray-700 prose-p:leading-relaxed prose-p:my-2
+                prose-strong:text-gray-900 prose-strong:font-semibold
+                prose-ul:my-2 prose-ul:space-y-1
+                prose-li:text-sm prose-li:text-gray-700
+                prose-hr:border-gray-200 prose-hr:my-4">
+                <ReactMarkdown remarkPlugins={[remarkGfm]}>{streamingText}</ReactMarkdown>
+              </div>
+            </div>
           </div>
         )}
 
