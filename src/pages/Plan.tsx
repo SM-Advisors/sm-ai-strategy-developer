@@ -172,6 +172,19 @@ const Plan = () => {
     toast.success(`Switched to v${version.version_number}`);
   };
 
+  // Sorted versions for prev/next navigation
+  const sortedVersions = [...planVersions].sort((a, b) => a.version_number - b.version_number);
+  const currentIdx = sortedVersions.findIndex((v) => v.version_number === (currentPlanVersion ?? sortedVersions[0]?.version_number));
+  const canGoPrevVersion = currentIdx > 0;
+  const canGoNextVersion = currentIdx < sortedVersions.length - 1;
+
+  const handlePrevVersion = () => {
+    if (canGoPrevVersion) handleSwitchVersion(sortedVersions[currentIdx - 1]);
+  };
+  const handleNextVersion = () => {
+    if (canGoNextVersion) handleSwitchVersion(sortedVersions[currentIdx + 1]);
+  };
+
   const formatVersionDate = (dateStr: string) => {
     try {
       const d = new Date(dateStr);
