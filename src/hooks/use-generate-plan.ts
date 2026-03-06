@@ -1,12 +1,13 @@
 import { useIntakeStore } from "@/stores/intake-store";
 import { useAuthStore } from "@/stores/auth-store";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 
 export function useGeneratePlan() {
   const store = useIntakeStore();
   const navigate = useNavigate();
+  const location = useLocation();
 
   const generate = async () => {
     const formData = store.getFormData();
@@ -151,7 +152,7 @@ export function useGeneratePlan() {
         }
       })();
 
-      navigate("/plan");
+      if (location.pathname !== "/plan") navigate("/plan");
     } catch (err: any) {
       clearTimeout(timeout);
       store.setIsGenerating(false);

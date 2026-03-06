@@ -1,7 +1,6 @@
 import { useState, useMemo, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { useIntakeStore, IntakeFormData } from "@/stores/intake-store";
-import { useAuthStore } from "@/stores/auth-store";
 import { sections } from "@/config/intake-sections";
 import ProgressBar from "@/components/intake/ProgressBar";
 import FormField from "@/components/intake/FormField";
@@ -21,8 +20,7 @@ const ANDREA_PANEL_WIDTH = 400;
 const Intake = () => {
   const navigate = useNavigate();
   const store = useIntakeStore();
-  const { currentStep, setCurrentStep, isGenerating, generatedPlan, isLoadingFromServer, loadFromServer } = store;
-  const { session } = useAuthStore();
+  const { currentStep, setCurrentStep, isGenerating, generatedPlan, isLoadingFromServer } = store;
   const [errors, setErrors] = useState<Set<string>>(new Set());
   const { generate } = useGeneratePlan();
 
@@ -37,13 +35,6 @@ const Intake = () => {
   const section = isReviewStep ? null : sections[currentStep];
   const isLastFormStep = currentStep === sections.length - 1;
   const isFirstStep = currentStep === 0;
-
-  // Load shared form data from server on mount
-  useEffect(() => {
-    if (session?.accessCodeId) {
-      loadFromServer(session.accessCodeId, session.orgUserId);
-    }
-  }, [session?.accessCodeId]);
 
   useEffect(() => {
     document.title = isReviewStep
