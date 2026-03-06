@@ -10,6 +10,7 @@ import PlanTocSidebar from "@/components/plan/PlanTocSidebar";
 import { downloadMarkdown, downloadDocx, downloadPdf } from "@/lib/export-plan";
 import { useCallback, useEffect, useRef, useState } from "react";
 import AndreaPlanReview from "@/components/andrea/AndreaPlanReview";
+import GeneratingOverlay from "@/components/intake/GeneratingOverlay";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import {
@@ -22,7 +23,7 @@ import {
 const Plan = () => {
   const navigate = useNavigate();
   const {
-    generatedPlan, companyName, submissionId, setGeneratedPlan,
+    generatedPlan, isGenerating, companyName, submissionId, setGeneratedPlan,
     planVersions, currentPlanVersion, setPlanVersions, setCurrentPlanVersion, loadPlanVersion,
     _accessCodeId,
   } = useIntakeStore();
@@ -36,12 +37,15 @@ const Plan = () => {
   const contentRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
-  // Redirect if no plan
+  // Redirect if no plan (but not while regenerating — that would trigger loadFromServer on Intake and restore the old plan)
   useEffect(() => {
-    if (!generatedPlan) {
+    if (!generatedPlan && !isGenerating) {
       navigate("/intake", { replace: true });
     }
-  }, [generatedPlan, navigate]);
+  }, [generatedPlan, isGenerating, navigate]);
+
+  // Show generating overlay on this page when regenerating so Intake never mounts
+  if (isGenerating) return <GeneratingOverlay />;
 
   useEffect(() => {
     document.title = `${companyName || "Organization"} — AI Strategic Plan`;
