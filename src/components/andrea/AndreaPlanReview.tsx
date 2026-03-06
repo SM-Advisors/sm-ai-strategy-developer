@@ -1,40 +1,85 @@
-import { useState, useRef, useEffect } from "react";
-import { X, Send } from "lucide-react";
+import { useState, useRef, useEffect, useCallback } from "react";
+import { X, Send, Square, MessageSquarePlus, History } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useAndreaPlanReview } from "@/hooks/use-andrea-plan-review";
+import type { PlanReviewConversation } from "@/hooks/use-andrea-plan-review";
 import AndreaPlanReviewMessages from "./AndreaPlanReviewMessages";
 import AndreaSuggestedPrompts from "./AndreaSuggestedPrompts";
+import AndreaChatHistory from "./AndreaChatHistory";
 import andreaCoachImg from "@/assets/andrea-coach.png";
 import andreaCoach2Img from "@/assets/andrea-coach2.png";
 
 export default function AndreaPlanReview() {
   const [isOpen, setIsOpen] = useState(false);
   const [inputValue, setInputValue] = useState("");
-  const inputRef = useRef<HTMLInputElement>(null);
+  const [showHistory, setShowHistory] = useState(false);
+  const inputRef = useRef<HTMLTextAreaElement>(null);
 
   const {
     messages,
     isLoading,
     latestPrompts,
+    conversations,
+    activeConversationId,
     sendMessage,
+    cancelRequest,
+    startNewChat,
+    switchConversation,
+    deleteConversation,
   } = useAndreaPlanReview();
 
   useEffect(() => {
-    if (isOpen) {
+    if (isOpen && !showHistory) {
       setTimeout(() => inputRef.current?.focus(), 100);
     }
-  }, [isOpen]);
+  }, [isOpen, activeConversationId, showHistory]);
 
   const handleSend = (e?: React.FormEvent) => {
     e?.preventDefault();
     if (!inputValue.trim() || isLoading) return;
     sendMessage(inputValue.trim());
     setInputValue("");
+    if (inputRef.current) inputRef.current.style.height = "auto";
+  };
+
+  const handleKeyDown = useCallback(
+    (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
+      if (e.key === "Enter" && !e.shiftKey && !e.ctrlKey) {
+        e.preventDefault();
+        if (inputValue.trim() && !isLoading) {
+          sendMessage(inputValue.trim());
+          setInputValue("");
+          if (inputRef.current) inputRef.current.style.height = "auto";
+        }
+      }
+    },
+    [inputValue, isLoading, sendMessage]
+  );
+
+  const handleInput = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
+    setInputValue(e.target.value);
+    const el = e.target;
+    el.style.height = "auto";
+    el.style.height = Math.min(el.scrollHeight, 120) + "px";
   };
 
   const handlePromptClick = (prompt: string) => {
     sendMessage(prompt);
   };
+
+  const handleNewChat = () => {
+    startNewChat();
+    setShowHistory(false);
+    setInputValue("");
+  };
+
+  // Map conversations to the format expected by AndreaChatHistory
+  const historyConversations = conversations.map((c) => ({
+    id: c.id,
+    title: c.title,
+    messages: c.messages,
+    createdAt: c.createdAt,
+  }));
 
   // --- Collapsed bubble ---
   if (!isOpen) {
@@ -60,9 +105,9 @@ export default function AndreaPlanReview() {
 
   // --- Expanded chat panel ---
   return (
-    <div className="fixed bottom-0 right-0 z-[9999] w-full h-[85vh] sm:bottom-6 sm:right-6 sm:w-[420px] sm:h-[560px] flex flex-col rounded-none sm:rounded-xl shadow-2xl overflow-hidden border border-border print-hidden">
+    <div className="fixed right-0 top-0 z-[9998] h-screen w-full sm:w-[400px] flex flex-col shadow-2xl border-l border-border bg-background print-hidden">
       {/* Header */}
-      <div className="bg-background px-4 py-3 flex items-center gap-3 shrink-0">
+      <div className="bg-background px-4 py-3 flex items-center gap-3 shrink-0 border-b border-border">
         <img
           src={andreaCoach2Img}
           alt="Andrea"
@@ -76,50 +121,104 @@ export default function AndreaPlanReview() {
             Plan Review Advisor
           </p>
         </div>
-        <button
-          onClick={() => setIsOpen(false)}
-          className="text-foreground/60 hover:text-foreground p-1 rounded-md hover:bg-foreground/10 transition-colors"
-          aria-label="Close chat"
-        >
-          <X className="w-5 h-5" />
-        </button>
-      </div>
-
-      {/* Messages area */}
-      <div className="flex-1 bg-card overflow-hidden flex flex-col min-h-0">
-        <AndreaPlanReviewMessages
-          messages={messages}
-          isLoading={isLoading}
-        />
-
-        <AndreaSuggestedPrompts
-          prompts={latestPrompts}
-          onSelect={handlePromptClick}
-          disabled={isLoading}
-        />
-      </div>
-
-      {/* Input area */}
-      <div className="bg-card border-t border-[hsl(var(--card-border))] px-4 py-3 shrink-0">
-        <form onSubmit={handleSend} className="flex items-center gap-2">
-          <input
-            ref={inputRef}
-            value={inputValue}
-            onChange={(e) => setInputValue(e.target.value)}
-            placeholder="Ask about your plan..."
-            disabled={isLoading}
-            className="flex-1 text-sm px-3 py-2 rounded-lg border border-[hsl(var(--card-border))] bg-card text-card-foreground placeholder:text-card-foreground/40 focus:outline-none focus:ring-1 focus:ring-primary disabled:opacity-50"
-          />
-          <Button
-            type="submit"
-            size="icon"
-            className="h-9 w-9 shrink-0"
-            disabled={!inputValue.trim() || isLoading}
+        <div className="flex items-center gap-1">
+          <button
+            onClick={handleNewChat}
+            className="text-foreground/60 hover:text-foreground p-1.5 rounded-md hover:bg-foreground/10 transition-colors"
+            aria-label="New chat"
+            title="New chat"
           >
-            <Send className="h-4 w-4" />
-          </Button>
-        </form>
+            <MessageSquarePlus className="w-4.5 h-4.5" />
+          </button>
+          <button
+            onClick={() => setShowHistory((v) => !v)}
+            className={`p-1.5 rounded-md transition-colors ${
+              showHistory
+                ? "text-primary bg-primary/10"
+                : "text-foreground/60 hover:text-foreground hover:bg-foreground/10"
+            }`}
+            aria-label="Chat history"
+            title="Chat history"
+          >
+            <History className="w-4.5 h-4.5" />
+          </button>
+          <button
+            onClick={() => setIsOpen(false)}
+            className="text-foreground/60 hover:text-foreground p-1.5 rounded-md hover:bg-foreground/10 transition-colors"
+            aria-label="Close chat"
+          >
+            <X className="w-5 h-5" />
+          </button>
+        </div>
       </div>
+
+      {/* History panel or chat */}
+      {showHistory ? (
+        <div className="flex-1 overflow-hidden bg-card">
+          <AndreaChatHistory
+            conversations={historyConversations as any}
+            activeId={activeConversationId}
+            onSelect={switchConversation}
+            onDelete={deleteConversation}
+            onNewChat={handleNewChat}
+            onClose={() => setShowHistory(false)}
+          />
+        </div>
+      ) : (
+        <>
+          {/* Messages area */}
+          <div className="flex-1 bg-card overflow-hidden flex flex-col min-h-0">
+            <AndreaPlanReviewMessages
+              messages={messages}
+              isLoading={isLoading}
+            />
+
+            <AndreaSuggestedPrompts
+              prompts={latestPrompts}
+              onSelect={handlePromptClick}
+              disabled={isLoading}
+            />
+          </div>
+
+          {/* Input area */}
+          <div className="bg-card border-t border-[hsl(var(--card-border))] px-4 py-3 shrink-0">
+            <form onSubmit={handleSend} className="flex items-center gap-2">
+              <textarea
+                ref={inputRef}
+                value={inputValue}
+                onChange={handleInput}
+                onKeyDown={handleKeyDown}
+                placeholder="Ask about your plan..."
+                disabled={isLoading}
+                rows={1}
+                className="flex-1 text-sm px-3 py-2 rounded-lg border border-[hsl(var(--card-border))] bg-card text-card-foreground placeholder:text-card-foreground/40 focus:outline-none focus:ring-1 focus:ring-primary disabled:opacity-50 resize-none overflow-y-auto"
+                style={{ maxHeight: 120 }}
+              />
+              {isLoading ? (
+                <Button
+                  type="button"
+                  size="icon"
+                  variant="destructive"
+                  className="h-9 w-9 shrink-0"
+                  onClick={cancelRequest}
+                  aria-label="Stop generating"
+                >
+                  <Square className="h-3.5 w-3.5" />
+                </Button>
+              ) : (
+                <Button
+                  type="submit"
+                  size="icon"
+                  className="h-9 w-9 shrink-0"
+                  disabled={!inputValue.trim()}
+                >
+                  <Send className="h-4 w-4" />
+                </Button>
+              )}
+            </form>
+          </div>
+        </>
+      )}
     </div>
   );
 }
