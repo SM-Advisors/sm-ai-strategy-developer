@@ -152,7 +152,7 @@ const FormField = ({ field, error, questionNumber }: FormFieldProps) => {
 
       {field.type === "checkbox" && (
         <div className="space-y-2">
-          {field.options?.map((option) => {
+          {(field.optionsFn ? field.optionsFn(store as unknown as Record<string, unknown>) : field.options ?? []).map((option) => {
             const arr = value as string[];
             const checked = arr.includes(option);
             const disabled = !checked && field.maxSelect ? arr.length >= field.maxSelect : false;

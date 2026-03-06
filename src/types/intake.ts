@@ -6,12 +6,16 @@ export interface IntakeFormData {
   departmentCount: string;
   companyDescription: string;
   businessPriorities: string;
+  competitivePressure: string;
+  customerExpectations: string;
   // Section 2 – Leadership & AI Readiness
   executiveSponsor: string;
   leadershipAttitude: string;
   priorAIExperience: string;
   priorAIDetails: string;
   techAdoptionComfort: string;
+  technicalTalent: string;
+  pastTechRollouts: string;
   // Section 3 – Current Technology & Vendors
   corePlatforms: string;
   vendorsWithAI: string;
@@ -19,6 +23,8 @@ export interface IntakeFormData {
   currentAITools: string;
   currentAIToolsDetails: string;
   itSupportStructure: string;
+  dataMaturity: string;
+  dataQualityConcerns: string;
   // Section 4 – Workflows & Pain Points
   timeConsumingTasks: string;
   errorBottlenecks: string;
@@ -51,10 +57,13 @@ export interface IntakeFormData {
 export const defaultFormData: IntakeFormData = {
   companyName: "", industry: "", employeeCount: "", departmentCount: "",
   companyDescription: "", businessPriorities: "",
+  competitivePressure: "", customerExpectations: "",
   executiveSponsor: "", leadershipAttitude: "", priorAIExperience: "",
   priorAIDetails: "", techAdoptionComfort: "",
+  technicalTalent: "", pastTechRollouts: "",
   corePlatforms: "", vendorsWithAI: "", vendorAIDetails: "",
   currentAITools: "", currentAIToolsDetails: "", itSupportStructure: "",
+  dataMaturity: "", dataQualityConcerns: "",
   timeConsumingTasks: "", errorBottlenecks: "", manualProcesses: "",
   manualProcessesDetails: "", highPotentialDepartments: [], highPotentialDepartmentsDetails: "",
   success3Months: "", success6Months: "", success12Months: "", topOutcomes: [], trackedKPIs: "",

@@ -84,7 +84,7 @@ serve(async (req) => {
 
     // Build context with plan and scenario results
     const scenarioSummary = scenarioResults
-      ? scenarioResults.map((r: any) => `### ${r.stakeholder} (${r.overallSentiment})\n${r.executiveSummary}\nTop recommendations: ${r.topRecommendations?.map((rec: any) => `[${rec.priority}] ${rec.title}`).join(", ") || "None"}`).join("\n\n")
+      ? scenarioResults.map((r: any) => `### ${r.stakeholder} (${r.overallSentiment || "Unknown"})\n${r.narrative || r.executiveSummary || "[No narrative available]"}`).join("\n\n")
       : "[No scenario results yet]";
 
     const contextBlock = `
