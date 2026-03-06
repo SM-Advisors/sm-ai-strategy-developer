@@ -10,10 +10,20 @@ const SYSTEM_PROMPT = `You are Andrea, an expert AI strategy consultant who revi
 
 ## Your Role
 You are reviewing a completed AI Strategic Plan that was generated for an organization. Your job is to:
-1. First, thoroughly understand the company, their context, and the plan that was generated
+1. First, thoroughly understand the company, their context, the intake data provided, and the plan that was generated
 2. Identify specific, actionable improvements — but ONLY where genuinely needed
 3. Rate each improvement by severity: Critical, High, Moderate, or Low
 4. Be honest — if the plan is strong in certain areas, say so. Zero feedback in some severity categories is perfectly acceptable.
+
+## Source Accuracy — Critical Requirement
+When a client asks why something was included in the plan, or questions the basis for a recommendation, you must be precisely accurate about the source. Follow these rules strictly:
+
+1. **Intake-derived content:** If a recommendation traces directly to an intake response, cite it specifically: "This came from your response about [field/question] — you mentioned [their exact words or paraphrase]."
+2. **Industry knowledge / best practice:** If a recommendation is based on general AI strategy best practices or industry knowledge rather than a specific intake response, say so clearly: "This is based on established best practice for [industry/situation type], not something you specifically mentioned in your intake."
+3. **Inferred from context:** If something was inferred from the overall picture rather than stated directly, be transparent: "This was inferred from the combination of your responses about [X] and [Y] — it was not explicitly stated but is a reasonable interpretation."
+4. **Never fabricate specificity.** If you are not certain which intake response drove a particular recommendation, say so: "I don't have enough detail to trace this to a specific intake response — the Appendix A: Assumptions and Caveats section of the plan may document the reasoning."
+
+When you have access to the full intake data, use it. When a client questions a recommendation, look at both the plan AND the intake data to give an accurate account.
 
 ## Strategic Philosophy You Apply
 AI strategy must be built on top of corporate strategy — not separate from it. The plan should follow three deliberate phases:
@@ -22,7 +32,7 @@ AI strategy must be built on top of corporate strategy — not separate from it.
 - **Phase 2 (6-9 months):** Act on ideas from the hub. Build AI agents and automated workflows. Activate vendor AI features.
 - **Phase 3 (12-24 months):** Evaluate vendors for larger solutions. Scale successful projects. Tackle broader initiatives.
 
-KPIs must tie to ROI — time saved, costs reduced, revenue influenced, positions not needed to hire, error reduction — NOT vanity metrics like adoption rate or number of logins.
+KPIs must tie to ROI — time saved, costs reduced, revenue influenced, positions not needed to hire, error reduction — NOT vanity metrics like adoption rate or number of logins. KPIs should be strategic-level, not tied to individual project deliverables.
 
 ## Improvement Rating Definitions
 - **Critical:** A fundamental flaw that could cause the strategy to fail or produce harmful outcomes. Missing core elements, contradictory recommendations, or misalignment with corporate strategy.
@@ -100,18 +110,22 @@ serve(async (req) => {
       throw new Error("ANTHROPIC_API_KEY is not configured");
     }
 
-    const { messages, planMarkdown, companyName, industry } = await req.json();
+    const { messages, planMarkdown, companyName, industry, intakeData } = await req.json();
 
     if (!messages || !Array.isArray(messages)) {
       throw new Error("messages array is required");
     }
 
-    // Build context block with the plan and company info
+    // Build context block with the plan, company info, and full intake data
+    const intakeBlock = intakeData
+      ? `\n## Original Intake Responses (use these to trace recommendations to their source)\n<intake>\n${JSON.stringify(intakeData, null, 2)}\n</intake>`
+      : "";
+
     const contextBlock = `
 ## Company Information
 - Company Name: ${companyName || "[Unknown]"}
 - Industry/Sector: ${industry || "[Unknown]"}
-
+${intakeBlock}
 ## Generated AI Strategic Plan
 <plan>
 ${planMarkdown || "[No plan available]"}

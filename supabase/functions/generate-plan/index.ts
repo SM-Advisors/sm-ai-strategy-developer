@@ -19,7 +19,10 @@ The plan follows three deliberate phases with a consolidation gap between Phase 
 - Phase 2 (Months 6-9): Act on the best ideas from the hub. Build AI agents and automated workflows. Activate vendor AI features using skills built in Phase 1.
 - Phase 3 (Months 12-24): Evaluate vendors for larger solutions. Scale successful Phase 1 and 2 projects. Tackle broader, more complex initiatives.
 
-KPIs must be tied to ROI — time saved, costs reduced, revenue influenced, positions not hired, error reduction. Never recommend vanity metrics like adoption rate, number of logins, or tools deployed.
+KPIs must be tied to ROI — time saved, costs reduced, revenue influenced, positions not hired, error reduction. Never recommend vanity metrics like adoption rate, number of logins, or tools deployed. KPIs must be strategic-level — tied to business priorities, not to individual project deliverables.
+
+## Budget Philosophy
+The organization has provided an annual AI budget. Structure financial estimates as follows: Year 1 (covering Phases 1 and 2, roughly months 0-9 plus consolidation) should fit within the stated annual budget. Year 2 (covering Phase 3, months 12-24) should fit within the next year's annual budget. Do not divide the annual budget across 24 months — treat this as a 2-year plan funded by annual budget cycles. Budget figures in each phase should reflect what is realistically deployable within that year's allocation. Do not list detailed cost estimates for individual initiatives — instead state the total phase allocation and describe the categories of investment management should plan for.
 
 ## MANDATORY TEMPLATE — Fill every section exactly as structured below
 
@@ -29,6 +32,33 @@ KPIs must be tied to ROI — time saved, costs reduced, revenue influenced, posi
 **Prepared by SM Advisors**
 **Date: [Insert current date]**
 **Confidential**
+
+---
+
+## Table of Contents
+
+- [I. Executive Summary](#i-executive-summary)
+- [II. Organizational Profile](#ii-organizational-profile)
+  - [Company Snapshot](#company-snapshot)
+  - [Corporate Strategy and Business Priorities](#corporate-strategy-and-business-priorities)
+  - [Current Technology Landscape](#current-technology-landscape)
+  - [Data Readiness Assessment](#data-readiness-assessment)
+- [III. AI Readiness Assessment](#iii-ai-readiness-assessment)
+  - [Readiness Scorecard](#readiness-scorecard)
+  - [Dimension Narratives](#dimension-narratives)
+- [IV. Strategic AI Roadmap](#iv-strategic-ai-roadmap)
+  - [Phase 1: Foundation and Muscle Memory](#phase-1-foundation-and-muscle-memory-months-0-3)
+  - [Consolidation Period](#consolidation-period-months-3-6)
+  - [Phase 2: Building on Momentum](#phase-2-building-on-momentum-months-6-9)
+  - [Phase 3: Scale and Strategic Expansion](#phase-3-scale-and-strategic-expansion-months-12-24)
+  - [Cumulative Investment Summary](#cumulative-investment-summary)
+- [V. Communication Hub Design](#v-communication-hub-design)
+- [VI. Recommended AI Use Cases](#vi-recommended-ai-use-cases)
+- [VII. Governance and Risk Framework](#vii-governance-and-risk-framework)
+- [VIII. Success Metrics and KPIs](#viii-success-metrics-and-kpis)
+- [IX. Areas for Deeper Exploration](#ix-areas-for-deeper-exploration)
+- [Appendix A: Assumptions and Caveats](#appendix-a-assumptions-and-caveats)
+- [Appendix B: Key Terms](#appendix-b-key-terms)
 
 ---
 
@@ -42,17 +72,18 @@ KPIs must be tied to ROI — time saved, costs reduced, revenue influenced, posi
 
 **The Strategic Recommendation:** [One paragraph describing the recommended approach — phased, grounded in their priorities, calibrated to their readiness. Mention the Communication Hub and Working Group as Phase 1 anchors.]
 
-**Expected Outcomes:** [One paragraph describing what success looks like at each phase — quantified where possible.]
+**Expected Outcomes:** [One paragraph describing what organizational and business success looks like at each phase — without tying outcomes to individual projects or specific deliverables. Describe phase-level capability and results. Example pattern: "By Month 3, [Company Name] will have built AI muscle memory across its team, with measurable time savings beginning to emerge from structured early use. By months 6-9, the organization will have implemented [number] automated workflows — potential examples include [general workflow category] or [general workflow category]. By months 12-24, AI will be embedded as a standard operating capability [tied to their stated strategic priorities]." Keep outcomes strategic and organizational, not project-specific.]
 
 **Phase Investment Summary:**
 
-| Phase | Timeline | Primary Focus | Estimated Investment |
-|-------|----------|---------------|---------------------|
-| Phase 1 | Months 0-3 | Foundation and Muscle Memory | [Amount] |
-| Consolidation | Months 3-6 | Solidification and Planning | Minimal — internal time only |
-| Phase 2 | Months 6-9 | Building and Activation | [Amount] |
-| Phase 3 | Months 12-24 | Scale and Strategic Expansion | [Amount] |
-| **Total** | **24 months** | | **[Total]** |
+| Phase | Timeline | Primary Focus | Year 1 / Year 2 Budget |
+|-------|----------|---------------|------------------------|
+| Phase 1 | Months 0-3 | Foundation and Muscle Memory | Year 1 |
+| Consolidation | Months 3-6 | Solidification and Planning | Year 1 — minimal, internal time only |
+| Phase 2 | Months 6-9 | Building and Activation | Year 1 |
+| Phase 3 | Months 12-24 | Scale and Strategic Expansion | Year 2 |
+| **Year 1 Total** | **Months 0-9** | | **[Estimated Year 1 spend within annual budget]** |
+| **Year 2 Total** | **Months 12-24** | | **[Estimated Year 2 spend within annual budget]** |
 
 ---
 
@@ -135,18 +166,18 @@ KPIs must be tied to ROI — time saved, costs reduced, revenue influenced, posi
 | AI Working Group Formation | Establish cross-functional working group meeting [weekly/biweekly]. | [Recommended owner] | Executive sponsor commitment | First meeting held within 30 days; all departments represented |
 | Communication Hub Launch | Deploy [specific platform recommendation] as the AI idea and feedback channel. | [Recommended owner] | Working Group formation | 10+ submissions in first 30 days; weekly review in Working Group |
 | Structured AI Exposure Program | Every team member uses AI tools for real work tasks weekly. | [Recommended owner] | Tool access and basic training | 100% of staff complete first task using AI within 60 days |
-| [Quantifiable Phase 1 Project] | [Specific project tailored to their biggest pain point — must have clear baseline, target, and measurement method. Name the specific process, the current time/cost, and the target improvement.] | [Owner] | [Dependency] | [Specific measurable metric — e.g., reduce proposal draft time from 8 hours to 2 hours, saving X hours per month] |
-| Initial Governance Framework | Establish acceptable use policy and data handling guidelines appropriate to their regulatory environment. | [Owner] | Legal or compliance review | Policy documented and communicated to all staff |
+| [Quantifiable Phase 1 Project] | [Specific project tailored to their biggest pain point — must have clear baseline, target, and measurement method. Name the specific process and target improvement.] | [Owner] | [Dependency] | [Specific measurable outcome — e.g., reduce proposal draft time from 8 hours to 2 hours] |
+| Initial Governance Framework | Establish governance documentation appropriate to their regulatory environment. | [Owner] | Legal or compliance review | Framework documented and communicated to all staff |
 
-**Phase 1 Investment:**
+**Phase 1 Budget Allocation: [Amount from Year 1 annual budget]**
 
-| Item | Estimated Cost | Notes |
-|------|----------------|-------|
-| AI tool licenses (if not already in place) | [Amount] | [Specific tools recommended] |
-| Training and enablement | [Amount] | [Approach — internal, vendor, external facilitator] |
-| Communication Hub setup | [Amount] | Typically minimal if using existing tech stack |
-| Phase 1 project implementation | [Amount] | [Build vs. buy vs. activate vendor feature] |
-| **Phase 1 Total** | **[Total]** | |
+[One sentence on what this phase's investment covers overall.]
+
+Management should plan how to deploy this budget across the following areas:
+- **AI Tool Licenses:** [What this covers and relevant tool examples for their stack]
+- **Training and Enablement:** [Approach — internal facilitation, vendor-led, or external facilitator]
+- **Communication Hub Setup:** Typically minimal when using tools already in the existing tech stack
+- **Phase 1 Quantifiable Project:** [Build vs. activate vs. buy considerations and what drives the decision]
 
 ---
 
@@ -169,14 +200,14 @@ KPIs must be tied to ROI — time saved, costs reduced, revenue influenced, posi
 | Vendor AI Feature Activation | Activate [specific vendor AI features identified in intake] using the skills the team built in Phase 1. | [Owner] | Phase 1 AI exposure program | [Adoption and outcome metric] |
 | Communication Hub Evolution | Hub continues operating; Working Group formalizes the process for evaluating and prioritizing new ideas. | [Owner] | Active hub from Phase 1 | Defined evaluation process; ideas moving from submission to decision within 30 days |
 
-**Phase 2 Investment:**
+**Phase 2 Budget Allocation: [Amount from Year 1 annual budget — remaining after Phase 1]**
 
-| Item | Estimated Cost | Notes |
-|------|----------------|-------|
-| [Automation 1 development or license] | [Amount] | [Build vs. buy vs. activate] |
-| [Automation 2 development or license] | [Amount] | [Build vs. buy vs. activate] |
-| Vendor AI activation | [Amount] | [Typically included in existing contracts] |
-| **Phase 2 Total** | **[Total]** | |
+[One sentence on what this phase's investment covers overall.]
+
+Management should plan how to deploy this budget across the following areas:
+- **Automation Development or Licensing:** [Build vs. buy vs. activate considerations for the workflows identified]
+- **Vendor AI Activation:** [Notes on whether this is within existing contracts or requires additional spend]
+- **Working Group Operational Costs:** [Any facilitation or tooling costs as the group matures]
 
 ---
 
@@ -193,26 +224,28 @@ KPIs must be tied to ROI — time saved, costs reduced, revenue influenced, posi
 | [Strategic AI Initiative] | [A higher-complexity initiative that was not feasible in Phase 1/2 but becomes possible with the foundation built — tie to their 12-24 month success vision.] | [Owner] | [Dependencies from earlier phases] | [Strategic outcome metric] |
 | Working Group Evolves to Innovation Council | Formalize the Working Group as a permanent AI governance and innovation council with board reporting cadence. | [Executive Sponsor] | Successful Phase 1/2 execution | Quarterly board updates on AI progress and ROI |
 
-**Phase 3 Investment:**
+**Phase 3 Budget Allocation: [Amount from Year 2 annual budget]**
 
-| Item | Estimated Cost | Notes |
-|------|----------------|-------|
-| [Scale initiative] | [Amount] | |
-| [Vendor evaluation and onboarding] | [Amount] | |
-| [Strategic initiative] | [Amount] | |
-| **Phase 3 Total** | **[Total]** | |
+[One sentence on what this phase's investment covers overall.]
+
+Management should plan how to deploy this budget across the following areas:
+- **Scaling Successful Projects:** [What expansion entails and key cost drivers]
+- **Vendor Evaluation and Onboarding:** [What the evaluation process typically requires in time and investment]
+- **Strategic Initiative Development:** [Build vs. buy considerations for the higher-complexity initiative]
+- **Innovation Council Operations:** [Governance and ongoing program management costs]
 
 ---
 
 ### Cumulative Investment Summary
 
-| Phase | Investment | Cumulative Total |
-|-------|-----------|-----------------|
-| Phase 1 (Months 0-3) | [Amount] | [Amount] |
-| Consolidation (Months 3-6) | Minimal | [Running total] |
-| Phase 2 (Months 6-9) | [Amount] | [Running total] |
-| Phase 3 (Months 12-24) | [Amount] | [Grand total] |
-| **24-Month Total** | | **[Grand total]** |
+| Phase | Year | Budget Draw | Notes |
+|-------|------|-------------|-------|
+| Phase 1 (Months 0-3) | Year 1 | [Amount] | Foundation and muscle memory |
+| Consolidation (Months 3-6) | Year 1 | Minimal | Internal time only |
+| Phase 2 (Months 6-9) | Year 1 | [Amount] | Building and activation |
+| **Year 1 Total** | | **[Year 1 total]** | **Should align with annual budget** |
+| Phase 3 (Months 12-24) | Year 2 | [Amount] | Scale and strategic expansion |
+| **Year 2 Total** | | **[Year 2 total]** | **Should align with annual budget** |
 
 ---
 
@@ -288,18 +321,9 @@ KPIs must be tied to ROI — time saved, costs reduced, revenue influenced, posi
 
 [One to two paragraphs describing the governance structure appropriate for their size and regulatory environment. For smaller organizations, this may be as simple as the AI Working Group owning governance. For regulated industries, describe a more formal structure with defined roles.]
 
-### Acceptable Use Policy — Key Provisions
+### Suggested Policy Frameworks to Reference
 
-[List the 5-8 most important provisions for their Acceptable Use Policy, written as clear, plain-language guidelines rather than legal language. Tailor to their industry and the specific risks they flagged.]
-
-- [Provision 1]
-- [Provision 2]
-- [Provision 3]
-[Continue...]
-
-### Data Handling Requirements
-
-[One paragraph on how AI tools should interact with their data — what can go into public AI tools, what requires private or enterprise deployments, and any specific requirements driven by their compliance frameworks.]
+[One paragraph identifying the types of governance documents the organization should develop or reference — for example, an Acceptable Use Policy for AI tools, a Data Classification and Handling Policy, a Vendor Risk Assessment Process, and any frameworks specific to their industry or compliance requirements. Reference only the types and names of frameworks; do not prescribe specific provisions. The AI Working Group should own the development of these policies, with input from legal, compliance, and HR as appropriate to their size and structure.]
 
 ### Risk Register
 
@@ -311,76 +335,30 @@ KPIs must be tied to ROI — time saved, costs reduced, revenue influenced, posi
 | [Risk 4] | High/Med/Low | High/Med/Low | [Mitigation] | [Role] |
 | [Risk 5] | High/Med/Low | High/Med/Low | [Mitigation] | [Role] |
 
-### Compliance Alignment Notes
+---
 
-[If they listed specific compliance frameworks, address each one specifically — one to two sentences per framework on how the AI strategy accommodates it. If no specific frameworks were listed, write one paragraph on general data privacy and vendor assessment practices appropriate to their industry.]
+## VIII. Success Metrics and KPIs
+
+[One introductory paragraph on the philosophy: measure outcomes that leadership already cares about, not AI activity. Every KPI should connect to a business priority stated in the intake. KPIs should be strategic-level — measuring organizational outcomes, not tracking specific project deliverables.]
+
+### Strategic KPI Dashboard
+
+| KPI | Category | Baseline | Year 1 Target | Year 2 Target | How to Measure | Reporting Cadence |
+|----|---------|---------|--------------|--------------|----------------|------------------|
+| [KPI tied to stated business priority 1] | [Time Savings / Efficiency / Revenue / Cost / Risk / Quality] | [Current state if known, or "To be established"] | [Year 1 target] | [Year 2 target] | [Method] | [Monthly/Quarterly] |
+| [KPI tied to stated business priority 2] | [...] | [...] | [...] | [...] | [...] | [...] |
+| [KPI tied to stated business priority 3] | [...] | [...] | [...] | [...] | [...] | [...] |
+| AI idea capture rate | Organizational Learning | 0 submissions/month | [Year 1 target] | [Year 2 target] | Communication Hub count | Monthly |
+| Strategic initiatives actioned from hub | Strategic Execution | 0 | [Year 1 target] | [Year 2 target] | Working Group log | Quarterly |
+[Add additional KPIs tied to their topOutcomes and trackedKPIs fields — all strategic-level, minimum 5 rows, maximum 10]
+
+### How Leadership Monitors Progress
+
+[One paragraph describing a practical monitoring cadence: what the AI Working Group reviews monthly, what goes to senior leadership quarterly, and what gets reported to the board or executive sponsor on an annual basis. Keep this specific to the organization's governance structure and decision-making culture.]
 
 ---
 
-## VIII. Investment and Resource Plan
-
-[One introductory paragraph framing the investment in terms of ROI — the question is not what this costs but when it starts paying for itself.]
-
-### Per-Phase Budget Detail
-
-[This section summarizes the per-phase investment tables from the Roadmap section. Write one paragraph per phase framing the investment in terms of what it buys and what it produces.]
-
-**Phase 1 (Months 0-3):** [Paragraph on Phase 1 investment rationale. Total: [Amount]]
-
-**Phase 2 (Months 6-9):** [Paragraph on Phase 2 investment rationale. Total: [Amount]]
-
-**Phase 3 (Months 12-24):** [Paragraph on Phase 3 investment rationale. Total: [Amount]]
-
-### Build vs. Buy vs. Activate
-
-| Decision | Recommended Approach | Rationale |
-|----------|---------------------|-----------|
-| Phase 1 primary project | [Build / Buy / Activate] | [One sentence rationale] |
-| Communication Hub | Activate existing tools | Zero additional cost; uses what they already have |
-| Phase 2 automations | [Build / Buy / Activate] | [Rationale] |
-| Phase 3 larger solution | Buy / Evaluate vendors | [Rationale] |
-
-### Staffing Recommendations by Phase
-
-| Phase | Role | Time Commitment | Source |
-|-------|------|----------------|--------|
-| Phase 1 | Implementation Owner | [X hrs/week] | Existing staff — [name/title if provided] |
-| Phase 1 | Working Group Members | 1-2 hrs/week each | Cross-functional existing staff |
-| Phase 2 | [Technical resource if needed] | [Time] | [Internal / Contract / Hire] |
-| Phase 3 | [Additional roles if needed] | [Time] | [Source] |
-
-### ROI Framework
-
-**When Does This Investment Pay for Itself?**
-
-[Two paragraphs. First paragraph: estimate the value created in Phase 1 based on the quantifiable project — use their specific pain point data to calculate hours saved x loaded labor rate or revenue influenced. Show the math explicitly. Second paragraph: project cumulative ROI through Phase 2 and Phase 3 based on the use cases recommended.]
-
----
-
-## IX. Success Metrics and KPIs
-
-[One introductory paragraph on the philosophy: measure outcomes that leadership already cares about, not AI activity. Every KPI should connect to a business priority they stated.]
-
-### KPI Dashboard
-
-| KPI | Category | Baseline | Phase 1 Target | Phase 2 Target | Phase 3 Target | How to Measure | Reporting Cadence |
-|----|---------|---------|---------------|---------------|---------------|----------------|-----------------|
-| [KPI tied to their stated priority 1] | [Time Savings / Efficiency / Revenue / Cost / Risk / Quality] | [Current state if known, or "To be established"] | [Target] | [Target] | [How] | [Monthly/Quarterly] |
-| [KPI tied to their stated priority 2] | [...] | [...] | [...] | [...] | [...] | [...] | |
-| [KPI tied to their stated priority 3] | [...] | [...] | [...] | [...] | [...] | [...] | |
-| Communication Hub submissions per month | Communication Hub Activity | 0 | 10+ | 20+ | 25+ | Hub platform count | Monthly |
-| Ideas moved from submission to evaluation | Communication Hub Activity | 0 | 2/month | 5/month | Ongoing | Working Group log | Monthly |
-| [Phase 1 project specific metric] | Efficiency | [Baseline] | [Target] | [Target] | [Target] | [Method] | Monthly |
-| [Phase 2 project specific metric] | [Category] | [Baseline] | N/A | [Target] | [Target] | [Method] | Monthly |
-[Add additional KPIs tied to their topOutcomes and trackedKPIs fields — minimum 6 rows, maximum 12]
-
-### Executive Dashboard Concept
-
-[One paragraph describing how leadership should monitor AI progress — what they look at monthly, what they look at quarterly, and what they bring to the board. Keep it practical and specific to their governance structure.]
-
----
-
-## X. Areas for Deeper Exploration
+## IX. Areas for Deeper Exploration
 
 [Introductory sentence: "The following questions are genuine gaps that this intake could not fully capture. Each one, if answered, would materially refine the recommendations in this plan."]
 
@@ -435,7 +413,7 @@ KPIs must be tied to ROI — time saved, costs reduced, revenue influenced, posi
 ## Formatting Rules (DO NOT include these rules in the output — they are instructions only)
 - Fill every placeholder in square brackets with specific, tailored content
 - Never leave a placeholder unfilled
-- Never add sections not in this template
+- Never add sections not in this template (there is no Section VIII Investment and Resource Plan — it has been removed)
 - Never remove sections from this template
 - Reference the organization by name throughout — never write "the organization" when you know their name
 - All tables must be complete — no empty cells unless the template specifies optional

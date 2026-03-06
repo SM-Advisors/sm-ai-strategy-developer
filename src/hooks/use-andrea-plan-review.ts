@@ -117,6 +117,7 @@ export function useAndreaPlanReview() {
         const planMarkdown = store.generatedPlan;
         const companyName = store.companyName;
         const industry = store.industry;
+        const intakeData = store.getFormData();
 
         const apiMessages = [...messages.filter((m) => m.id !== "welcome"), userMessage]
           .slice(-20)
@@ -128,6 +129,7 @@ export function useAndreaPlanReview() {
             planMarkdown,
             companyName,
             industry,
+            intakeData,
           },
         });
 
