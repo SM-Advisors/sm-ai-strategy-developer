@@ -204,6 +204,44 @@ export type Database = {
           },
         ]
       }
+      scenario_results: {
+        Row: {
+          created_at: string
+          id: string
+          industry: string
+          result_data: Json
+          stakeholder: string
+          submission_id: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          industry: string
+          result_data: Json
+          stakeholder: string
+          submission_id: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          industry?: string
+          result_data?: Json
+          stakeholder?: string
+          submission_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "scenario_results_submission_id_fkey"
+            columns: ["submission_id"]
+            isOneToOne: false
+            referencedRelation: "submissions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       submissions: {
         Row: {
           access_code_id: string | null
