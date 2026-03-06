@@ -125,21 +125,12 @@ export function useGeneratePlan() {
 
           if (uploadErr) throw uploadErr;
 
-          // Create version record
-          await (supabase as any)
-            .from("plan_versions")
-            .insert({
-              submission_id: submissionId,
-              version_number: nextVersion,
-              file_path: fileName,
-              label: "Generated",
-            });
-
-          // Update plan_file_path on submission
+          // Create version record + update plan_file_path via edge function
           await supabase.functions.invoke("save-intake", {
             body: {
               accessCodeId: session.accessCodeId,
               planFilePath: fileName,
+              planVersionData: { version_number: nextVersion, file_path: fileName, label: "Generated" },
             },
           });
 

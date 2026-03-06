@@ -58,56 +58,28 @@ export function useRunScenario() {
   const [error, setError] = useState<string>("");
   const [isLoadingFromDb, setIsLoadingFromDb] = useState(false);
 
-  /** Load persisted scenario results from the database on mount */
+  /** Load persisted scenario results via load-intake on mount */
   useEffect(() => {
-    const submissionId = useIntakeStore.getState().submissionId;
-    if (!submissionId) return;
+    const store = useIntakeStore.getState();
+    const accessCodeId = store._accessCodeId;
+    if (!accessCodeId) return;
 
     setIsLoadingFromDb(true);
-    supabase
-      .from("scenario_results")
-      .select("stakeholder, industry, result_data")
-      .eq("submission_id", submissionId)
-      .then(({ data, error: queryError }) => {
-        if (queryError) {
-          console.warn("Failed to load scenario results:", queryError);
-        } else if (data && data.length > 0) {
-          const loaded: ScenarioResult[] = data.map((row: any) => ({
-            ...(row.result_data as ScenarioResult),
-            stakeholder: row.stakeholder,
-            industry: row.industry,
-          }));
-          setResults(loaded);
-        }
-        setIsLoadingFromDb(false);
-      });
-  }, []);
-
-  /** Save a result to the database */
-  const saveResultToDb = useCallback(async (result: ScenarioResult) => {
-    const submissionId = useIntakeStore.getState().submissionId;
-    if (!submissionId) return;
-
-    try {
-      const { error: upsertError } = await supabase
-        .from("scenario_results")
-        .upsert(
-          {
-            submission_id: submissionId,
-            stakeholder: result.stakeholder,
-            industry: result.industry,
-            result_data: result as any,
-            updated_at: new Date().toISOString(),
-          },
-          { onConflict: "submission_id,stakeholder" }
-        );
-
-      if (upsertError) {
-        console.warn("Failed to save scenario result:", upsertError);
+    supabase.functions.invoke("load-intake", {
+      body: { accessCodeId },
+    }).then(({ data, error }) => {
+      if (error) {
+        console.warn("Failed to load scenario results:", error);
+      } else if (data?.scenarioResults && data.scenarioResults.length > 0) {
+        const loaded: ScenarioResult[] = data.scenarioResults.map((row: any) => ({
+          ...(row.result_data as ScenarioResult),
+          stakeholder: row.stakeholder,
+          industry: row.industry,
+        }));
+        setResults(loaded);
       }
-    } catch (err) {
-      console.warn("Failed to save scenario result:", err);
-    }
+      setIsLoadingFromDb(false);
+    });
   }, []);
 
   /** Run a scenario for a single stakeholder */
@@ -116,6 +88,7 @@ export function useRunScenario() {
       const store = useIntakeStore.getState();
       const planMarkdown = store.generatedPlan;
       const companyName = store.companyName;
+      const submissionId = store.submissionId;
 
       if (!planMarkdown) {
         setError("No generated plan found. Please generate a plan first.");
@@ -128,7 +101,7 @@ export function useRunScenario() {
 
       try {
         const { data, error: invokeError } = await supabase.functions.invoke("run-scenario", {
-          body: { planMarkdown, stakeholder, industry, companyName },
+          body: { planMarkdown, stakeholder, industry, companyName, submissionId },
         });
 
         if (invokeError) {
@@ -145,9 +118,6 @@ export function useRunScenario() {
           return [...filtered, result];
         });
 
-        // Persist to database
-        await saveResultToDb(result);
-
         return result;
       } catch (err: any) {
         console.error("Scenario run error:", err);
@@ -158,21 +128,21 @@ export function useRunScenario() {
         setCurrentStakeholder("");
       }
     },
-    [saveResultToDb]
+    []
   );
 
-  /** Clear all results (also from DB) */
+  /** Clear all results (also from DB via save-intake) */
   const clearResults = useCallback(async () => {
     setResults([]);
     setError("");
 
-    const submissionId = useIntakeStore.getState().submissionId;
-    if (submissionId) {
+    const store = useIntakeStore.getState();
+    const accessCodeId = store._accessCodeId;
+    if (accessCodeId) {
       try {
-        await supabase
-          .from("scenario_results")
-          .delete()
-          .eq("submission_id", submissionId);
+        await supabase.functions.invoke("save-intake", {
+          body: { accessCodeId, clearScenarioResults: true },
+        });
       } catch (err) {
         console.warn("Failed to clear scenario results from DB:", err);
       }

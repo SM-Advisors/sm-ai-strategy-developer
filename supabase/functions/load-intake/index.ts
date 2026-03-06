@@ -38,6 +38,7 @@ serve(async (req) => {
     // Load plan versions for this submission
     let planVersions: Array<{ version_number: number; file_path: string; label: string; created_at: string }> = [];
     let planSignedUrl: string | null = null;
+    let scenarioResults: Array<{ stakeholder: string; industry: string; result_data: unknown }> = [];
 
     if (submission) {
       const { data: versions } = await supabase
@@ -65,10 +66,19 @@ serve(async (req) => {
           planSignedUrl = signedData.signedUrl;
         }
       }
+
+      // Load scenario results for this submission
+      const { data: scenarios } = await supabase
+        .from("scenario_results")
+        .select("stakeholder, industry, result_data")
+        .eq("submission_id", submission.id);
+      if (scenarios && scenarios.length > 0) {
+        scenarioResults = scenarios;
+      }
     }
 
     return new Response(
-      JSON.stringify({ submission: submission ?? null, planSignedUrl, planVersions }),
+      JSON.stringify({ submission: submission ?? null, planSignedUrl, planVersions, scenarioResults }),
       { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
   } catch (e) {

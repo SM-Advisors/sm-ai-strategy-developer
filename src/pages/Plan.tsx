@@ -125,20 +125,14 @@ const Plan = () => {
 
         if (uploadErr) throw uploadErr;
 
-        // Create version record
-        await (supabase as any)
-          .from("plan_versions")
-          .insert({
-            submission_id: sid,
-            version_number: nextVersion,
-            file_path: fileName,
-            label: "Edited",
-          });
-
-        // Update plan_file_path
+        // Create version record + update plan_file_path via edge function
         if (session?.accessCodeId || _accessCodeId) {
           await supabase.functions.invoke("save-intake", {
-            body: { accessCodeId: session?.accessCodeId || _accessCodeId, planFilePath: fileName },
+            body: {
+              accessCodeId: session?.accessCodeId || _accessCodeId,
+              planFilePath: fileName,
+              planVersionData: { version_number: nextVersion, file_path: fileName, label: "Edited" },
+            },
           });
         }
 
