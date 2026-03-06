@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect, useLayoutEffect, useCallback } from "react";
+import { useState } from "react";
 import { FieldConfig } from "@/config/intake-sections";
 import { useIntakeStore, IntakeFormData } from "@/stores/intake-store";
 import { Input } from "@/components/ui/input";
@@ -21,21 +21,6 @@ const FormField = ({ field, error, questionNumber }: FormFieldProps) => {
   const submissionId = store.submissionId;
   const isAndreaEdited = store.andreaEditedFields.has(field.id);
   const [examplesOpen, setExamplesOpen] = useState(false);
-  const textareaRef = useRef<HTMLTextAreaElement>(null);
-
-  const autoResize = useCallback((el: HTMLTextAreaElement | null) => {
-    if (!el) return;
-    // Reset to minimum so scrollHeight recalculates correctly
-    el.style.height = "0px";
-    const newHeight = Math.max(el.scrollHeight, 38); // min ~1 row
-    el.style.height = newHeight + "px";
-  }, []);
-
-  useLayoutEffect(() => {
-    if (field.type === "textarea") {
-      autoResize(textareaRef.current);
-    }
-  }, [value, field.type, autoResize]);
 
   // Check showIf condition
   const isConditional = !!field.showIf;
@@ -112,16 +97,10 @@ const FormField = ({ field, error, questionNumber }: FormFieldProps) => {
 
       {field.type === "textarea" && (
         <Textarea
-          ref={textareaRef}
           value={value as string}
-          onChange={(e) => {
-            handleChange(e.target.value);
-            autoResize(e.target);
-          }}
-          style={{ overflow: "hidden" }}
-          rows={1}
+          onChange={(e) => handleChange(e.target.value)}
           className={cn(
-            "bg-card border-[hsl(var(--card-border))] text-card-foreground placeholder:text-muted-foreground focus:ring-primary resize-none",
+            "bg-card border-[hsl(var(--card-border))] text-card-foreground placeholder:text-muted-foreground focus:ring-primary resize-none [field-sizing:content] min-h-[38px]",
             error && "border-destructive"
           )}
         />
