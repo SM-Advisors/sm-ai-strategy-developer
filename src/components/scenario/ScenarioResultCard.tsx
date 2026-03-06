@@ -2,7 +2,6 @@ import { useState } from "react";
 import { cn } from "@/lib/utils";
 import { ChevronDown, ChevronUp, Quote, AlertTriangle, AlertCircle, Info, ArrowUp, RefreshCw } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { ChevronDown, ChevronUp, Quote, AlertTriangle, AlertCircle, Info, ArrowUp } from "lucide-react";
 import { Collapsible, CollapsibleTrigger, CollapsibleContent } from "@/components/ui/collapsible";
 import type { ScenarioResult, ScenarioRecommendation, ScenarioRisk } from "@/hooks/use-run-scenario";
 
