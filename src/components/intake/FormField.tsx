@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect, useCallback } from "react";
+import { useState, useRef, useEffect, useLayoutEffect, useCallback } from "react";
 import { FieldConfig } from "@/config/intake-sections";
 import { useIntakeStore, IntakeFormData } from "@/stores/intake-store";
 import { Input } from "@/components/ui/input";
@@ -31,10 +31,9 @@ const FormField = ({ field, error, questionNumber }: FormFieldProps) => {
     el.style.height = newHeight + "px";
   }, []);
 
-  useEffect(() => {
+  useLayoutEffect(() => {
     if (field.type === "textarea") {
-      // Use rAF to ensure DOM has rendered with the new value
-      requestAnimationFrame(() => autoResize(textareaRef.current));
+      autoResize(textareaRef.current);
     }
   }, [value, field.type, autoResize]);
 
