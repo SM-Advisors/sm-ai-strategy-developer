@@ -197,51 +197,8 @@ const Plan = () => {
             </button>
             <span className="text-border hidden sm:block">|</span>
             <span className="text-sm font-medium text-foreground truncate">
-              {companyName || "Organization"} — AI Strategic Plan
+              {companyName || "Organization"}
             </span>
-
-            {/* Version selector */}
-            {planVersions.length > 1 && (
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <Button
-                    variant="outline-light"
-                    size="sm"
-                    className="gap-1.5 text-xs px-2 sm:px-3 shrink-0"
-                    disabled={isLoadingVersion}
-                  >
-                    <History className="w-3.5 h-3.5" />
-                    <span className="hidden sm:inline">v{currentPlanVersion ?? planVersions[0]?.version_number}</span>
-                    <ChevronDown className="w-3 h-3" />
-                  </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="start" className="w-64">
-                  {planVersions.map((v) => (
-                    <DropdownMenuItem
-                      key={v.version_number}
-                      onClick={() => handleSwitchVersion(v)}
-                      className={currentPlanVersion === v.version_number ? "bg-primary/5 font-medium" : ""}
-                    >
-                      <div className="flex items-center justify-between w-full gap-2">
-                        <span className="text-sm">
-                          v{v.version_number}
-                          <span className="text-muted-foreground font-normal ml-1.5">
-                            — {v.label}
-                          </span>
-                        </span>
-                        <span className="text-xs text-muted-foreground shrink-0">
-                          {formatVersionDate(v.created_at)}
-                        </span>
-                      </div>
-                    </DropdownMenuItem>
-                  ))}
-                </DropdownMenuContent>
-              </DropdownMenu>
-            )}
-
-            {planVersions.length === 1 && (
-              <span className="text-xs text-muted-foreground shrink-0">v1</span>
-            )}
           </div>
 
           <div className="flex items-center gap-1 sm:gap-2 shrink-0">
@@ -297,7 +254,6 @@ const Plan = () => {
                   <RefreshCw className="w-3.5 h-3.5" />
                   <span className="hidden sm:inline">Regenerate</span>
                 </Button>
-
                 <Button
                   variant="ghost"
                   size="sm"
@@ -310,36 +266,54 @@ const Plan = () => {
 
                 <div className="h-4 w-px bg-border mx-0.5 sm:mx-1" />
 
-                <Button
-                  variant="outline-light"
-                  size="sm"
-                  onClick={() => downloadMarkdown(generatedPlan, companyName)}
-                  className="gap-1 text-xs px-2"
-                  title="Download Markdown"
-                >
-                  <FileText className="w-3.5 h-3.5" />
-                  <span className="hidden md:inline">.md</span>
-                </Button>
-                <Button
-                  variant="outline-light"
-                  size="sm"
-                  onClick={() => downloadDocx(generatedPlan, companyName)}
-                  className="gap-1 text-xs px-2"
-                  title="Download Word Document"
-                >
-                  <FileType className="w-3.5 h-3.5" />
-                  <span className="hidden md:inline">.docx</span>
-                </Button>
-                <Button
-                  variant="outline-light"
-                  size="sm"
-                  onClick={() => downloadPdf("plan-content", companyName)}
-                  className="gap-1 text-xs px-2"
-                  title="Download PDF"
-                >
-                  <FileDown className="w-3.5 h-3.5" />
-                  <span className="hidden md:inline">.pdf</span>
-                </Button>
+                {/* Version toggle */}
+                <div className="flex items-center gap-0.5">
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="px-1.5 h-8"
+                    disabled={isLoadingVersion || !canGoPrevVersion}
+                    onClick={handlePrevVersion}
+                  >
+                    <ChevronLeft className="w-3.5 h-3.5" />
+                  </Button>
+                  <span className="text-xs font-medium text-muted-foreground min-w-[28px] text-center select-none">
+                    v{currentPlanVersion ?? planVersions[0]?.version_number ?? 1}
+                  </span>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="px-1.5 h-8"
+                    disabled={isLoadingVersion || !canGoNextVersion}
+                    onClick={handleNextVersion}
+                  >
+                    <ChevronRight className="w-3.5 h-3.5" />
+                  </Button>
+                </div>
+
+                <div className="h-4 w-px bg-border mx-0.5 sm:mx-1" />
+
+                {/* Download dropdown */}
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button variant="outline-light" size="sm" className="gap-1.5 text-xs px-2 sm:px-3">
+                      <Download className="w-3.5 h-3.5" />
+                      <span className="hidden sm:inline">Download</span>
+                      <ChevronDown className="w-3 h-3" />
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end">
+                    <DropdownMenuItem onClick={() => downloadMarkdown(generatedPlan, companyName)}>
+                      Markdown (.md)
+                    </DropdownMenuItem>
+                    <DropdownMenuItem onClick={() => downloadDocx(generatedPlan, companyName)}>
+                      Word (.docx)
+                    </DropdownMenuItem>
+                    <DropdownMenuItem onClick={() => downloadPdf("plan-content", companyName)}>
+                      PDF (.pdf)
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
               </>
             )}
           </div>
