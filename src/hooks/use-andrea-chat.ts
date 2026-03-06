@@ -1,6 +1,7 @@
 import { useState, useCallback, useRef } from "react";
 import { useIntakeStore, IntakeFormData } from "@/stores/intake-store";
 import { sections } from "@/config/intake-sections";
+import { supabase } from "@/integrations/supabase/client";
 
 // --- Types ---
 
@@ -160,28 +161,16 @@ export function useAndreaChat() {
           .slice(-20)
           .map((m) => ({ role: m.role, content: m.content }));
 
-        const url = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/andrea-chat`;
-        const resp = await fetch(url, {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
-          },
-          body: JSON.stringify({
+        const { data, error: invokeError } = await supabase.functions.invoke("andrea-chat", {
+          body: {
             messages: apiMessages,
             currentSection,
             formState,
             visibleFields,
-          }),
-          signal: controller.signal,
+          },
         });
 
-        if (!resp.ok) {
-          const errData = await resp.json().catch(() => ({}));
-          throw new Error(errData.error || `Error ${resp.status}`);
-        }
-
-        const data = await resp.json();
+        if (invokeError) throw new Error(invokeError.message || "andrea-chat failed");
 
         const assistantMessage: ChatMessage = {
           id: crypto.randomUUID(),

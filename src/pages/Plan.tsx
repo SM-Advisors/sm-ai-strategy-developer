@@ -157,7 +157,7 @@ const Plan = () => {
       setIsEditMode(false);
     } catch (err) {
       console.warn("Failed to persist plan edits:", err);
-      toast.success("Plan updated (will persist on next save)");
+      toast.error("Failed to save plan edits. Your changes are preserved in memory.");
       setIsEditMode(false);
     } finally {
       setIsSavingEdit(false);
