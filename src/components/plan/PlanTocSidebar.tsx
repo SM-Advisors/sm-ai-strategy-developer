@@ -31,9 +31,18 @@ export function extractHeadings(markdown: string): TocItem[] {
   return items;
 }
 
+/** Returns only the title (H1) and major Roman-numeral sections */
+export function extractMajorHeadings(markdown: string): TocItem[] {
+  const all = extractHeadings(markdown);
+  // Keep H1 (title) and H2s that start with a Roman numeral pattern like "I.", "II.", "IV."
+  return all.filter(
+    (h) => h.level === 1 || /^[IVXLC]+[\.\)]\s/i.test(h.text)
+  );
+}
+
 const PlanTocSidebar = ({ markdown, activeId }: PlanTocSidebarProps) => {
   const [mobileOpen, setMobileOpen] = useState(false);
-  const headings = useMemo(() => extractHeadings(markdown), [markdown]);
+  const headings = useMemo(() => extractMajorHeadings(markdown), [markdown]);
 
   const handleClick = (id: string) => {
     const el = document.getElementById(id);
