@@ -6,6 +6,8 @@ import type { ScenarioResult, ScenarioRecommendation, ScenarioRisk } from "@/hoo
 
 interface ScenarioResultCardProps {
   result: ScenarioResult;
+  onRegenerate?: () => void;
+  isRegenerating?: boolean;
 }
 
 const sentimentColors: Record<string, { bg: string; text: string; border: string }> = {

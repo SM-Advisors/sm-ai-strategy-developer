@@ -26,7 +26,7 @@ const LOADING_MESSAGES = [
 const Scenario = () => {
   const navigate = useNavigate();
   const { generatedPlan, companyName, industry } = useIntakeStore();
-  const { results, isRunning, currentStakeholder, error, runScenario, clearResults } = useRunScenario();
+  const { results, isRunning, isLoadingFromDb, currentStakeholder, error, runScenario, clearResults } = useRunScenario();
 
   const [selectedStakeholder, setSelectedStakeholder] = useState<StakeholderType>("Company Leadership");
   const [customIndustry, setCustomIndustry] = useState(industry || "");
