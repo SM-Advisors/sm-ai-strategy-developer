@@ -64,14 +64,14 @@ function parseMarkdownToDocxElements(
   );
   elements.push(
     new Paragraph({
-      children: [new TextRun({ text: date, size: 24, color: "666666" })],
+      children: [new TextRun({ text: date, size: 24, color: "666666", font: "Arial" })],
       alignment: AlignmentType.CENTER,
       spacing: { after: 200 },
     })
   );
   elements.push(
     new Paragraph({
-      children: [new TextRun({ text: "Prepared by AI Strategic Planner", size: 20, color: "999999" })],
+      children: [new TextRun({ text: "Prepared by AI Strategic Planner", size: 20, color: "999999", font: "Arial" })],
       alignment: AlignmentType.CENTER,
     })
   );
@@ -111,6 +111,7 @@ function parseMarkdownToDocxElements(
                             text: cell.trim(),
                             bold: rowIdx === 0,
                             size: 20,
+                            font: "Arial",
                           }),
                         ],
                       }),
@@ -135,7 +136,7 @@ function parseMarkdownToDocxElements(
     } catch {
       // fallback: render as text
       dataRows.forEach((row) => {
-        elements.push(new Paragraph({ children: [new TextRun({ text: row.join(" | "), size: 20 })] }));
+        elements.push(new Paragraph({ children: [new TextRun({ text: row.join(" | "), size: 20, font: "Arial" })] }));
       });
     }
     tableRows = [];
@@ -195,14 +196,14 @@ function parseMarkdownToDocxElements(
       const parts = text.split(/\*\*(.+?)\*\*/);
       const runs: TextRun[] = [];
       parts.forEach((part, i) => {
-        runs.push(new TextRun({ text: part, bold: i % 2 === 1, size: 22 }));
+      runs.push(new TextRun({ text: part, bold: i % 2 === 1, size: 22, font: "Arial" }));
       });
       elements.push(new Paragraph({ children: runs, bullet: { level: 0 }, spacing: { after: 60 } }));
     } else {
       const parts = trimmed.split(/\*\*(.+?)\*\*/);
       const runs: TextRun[] = [];
       parts.forEach((part, i) => {
-        runs.push(new TextRun({ text: part, bold: i % 2 === 1, size: 22 }));
+        runs.push(new TextRun({ text: part, bold: i % 2 === 1, size: 22, font: "Arial" }));
       });
       elements.push(new Paragraph({ children: runs, spacing: { after: 100 } }));
     }
@@ -231,7 +232,7 @@ export async function downloadDocx(markdown: string, companyName: string) {
             children: [
               new Paragraph({
                 children: [
-                  new TextRun({ text: `${companyName} — AI Strategic Plan`, size: 16, color: "999999" }),
+                  new TextRun({ text: `${companyName} — AI Strategic Plan`, size: 16, color: "999999", font: "Arial" }),
                 ],
                 alignment: AlignmentType.RIGHT,
               }),
@@ -243,7 +244,7 @@ export async function downloadDocx(markdown: string, companyName: string) {
             children: [
               new Paragraph({
                 children: [
-                  new TextRun({ children: ["Page ", PageNumber.CURRENT, " of ", PageNumber.TOTAL_PAGES], size: 16, color: "999999" }),
+                  new TextRun({ children: ["Page ", PageNumber.CURRENT, " of ", PageNumber.TOTAL_PAGES], size: 16, color: "999999", font: "Arial" }),
                 ],
                 alignment: AlignmentType.CENTER,
               }),
