@@ -17,7 +17,16 @@ serve(async (req) => {
     const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
     if (!SUPABASE_URL || !SUPABASE_SERVICE_ROLE_KEY) throw new Error("Missing env vars");
 
-    const { accessCodeId, orgUserId, fieldId, value, oldValue, isAndreaSuggestion, fullIntakeData, planFilePath } = await req.json();
+    const {
+      accessCodeId, orgUserId, fieldId, value, oldValue, isAndreaSuggestion,
+      fullIntakeData, planFilePath,
+      // Plan versioning: insert a new plan_versions record
+      planVersionData,
+      // Scenario: upsert a single scenario result for a submission
+      scenarioResultData,
+      // Scenario: clear all scenario results for a submission
+      clearScenarioResults,
+    } = await req.json();
 
     if (!accessCodeId) {
       return new Response(
@@ -155,6 +164,60 @@ serve(async (req) => {
         last_edited_by: orgUserId ?? null,
         last_edited_at: new Date().toISOString(),
       };
+    } else if (planVersionData || scenarioResultData || clearScenarioResults) {
+      // Operations that require an existing submission
+      const { data: existingForOp } = await supabase
+        .from("submissions")
+        .select("id")
+        .eq("access_code_id", accessCodeId)
+        .maybeSingle();
+
+      if (!existingForOp) {
+        return new Response(
+          JSON.stringify({ error: "No submission found for this access code" }),
+          { status: 404, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+
+      if (scenarioResultData) {
+        const { stakeholder, industry, result_data } = scenarioResultData as {
+          stakeholder: string; industry: string; result_data: Record<string, unknown>;
+        };
+        await supabase.from("scenario_results").upsert(
+          {
+            submission_id: existingForOp.id,
+            stakeholder,
+            industry,
+            result_data,
+            updated_at: new Date().toISOString(),
+          },
+          { onConflict: "submission_id,stakeholder" }
+        );
+      }
+
+      if (planVersionData) {
+        const { version_number, file_path, label } = planVersionData as {
+          version_number: number; file_path: string; label: string;
+        };
+        await supabase.from("plan_versions").insert({
+          submission_id: existingForOp.id,
+          version_number,
+          file_path,
+          label: label || "Generated",
+        });
+      }
+
+      if (clearScenarioResults) {
+        await supabase
+          .from("scenario_results")
+          .delete()
+          .eq("submission_id", existingForOp.id);
+      }
+
+      return new Response(
+        JSON.stringify({ ok: true, submissionId: existingForOp.id }),
+        { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
     } else {
       return new Response(
         JSON.stringify({ error: "fieldId or fullIntakeData required" }),

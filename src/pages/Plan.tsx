@@ -125,20 +125,14 @@ const Plan = () => {
 
         if (uploadErr) throw uploadErr;
 
-        // Create version record
-        await (supabase as any)
-          .from("plan_versions")
-          .insert({
-            submission_id: sid,
-            version_number: nextVersion,
-            file_path: fileName,
-            label: "Edited",
-          });
-
-        // Update plan_file_path
+        // Create version record + update plan_file_path via edge function
         if (session?.accessCodeId || _accessCodeId) {
           await supabase.functions.invoke("save-intake", {
-            body: { accessCodeId: session?.accessCodeId || _accessCodeId, planFilePath: fileName },
+            body: {
+              accessCodeId: session?.accessCodeId || _accessCodeId,
+              planFilePath: fileName,
+              planVersionData: { version_number: nextVersion, file_path: fileName, label: "Edited" },
+            },
           });
         }
 
@@ -157,7 +151,7 @@ const Plan = () => {
       setIsEditMode(false);
     } catch (err) {
       console.warn("Failed to persist plan edits:", err);
-      toast.success("Plan updated (will persist on next save)");
+      toast.error("Failed to save plan edits. Your changes are preserved in memory.");
       setIsEditMode(false);
     } finally {
       setIsSavingEdit(false);

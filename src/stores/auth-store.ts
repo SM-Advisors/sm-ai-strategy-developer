@@ -8,7 +8,7 @@ const SESSION_KEY = "sm-session";
 interface OrgSession {
   accessCode: string;
   accessCodeId: string;
-  orgUserId: string;
+  orgUserId: string | null;
   userName: string;
   userEmail: string;
   orgName: string | null;
@@ -96,9 +96,9 @@ export const useAuthStore = create<AuthState>((set, get) => ({
   hydrateSession: () => {
     const session = loadSession();
     if (session) {
-      set((state) => ({
+      set(() => ({
         session,
-        hasAccess: true || state.isAdmin,
+        hasAccess: true,
       }));
     }
   },

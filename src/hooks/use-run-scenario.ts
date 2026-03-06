@@ -47,74 +47,71 @@ export function useRunScenario() {
   const [error, setError] = useState<string>("");
   const [isLoadingFromDb, setIsLoadingFromDb] = useState(false);
 
-  /** Load persisted scenario results from the database on mount */
+  /** Load persisted scenario results via load-intake edge function on mount */
   useEffect(() => {
-    const submissionId = useIntakeStore.getState().submissionId;
-    if (!submissionId) return;
+    const store = useIntakeStore.getState();
+    const accessCodeId = store._accessCodeId;
+    if (!accessCodeId) return;
 
     setIsLoadingFromDb(true);
-    supabase
-      .from("scenario_results")
-      .select("stakeholder, industry, result_data, created_at")
-      .eq("submission_id", submissionId)
-      .then(({ data, error: queryError }) => {
-        if (queryError) {
-          console.warn("Failed to load scenario results:", queryError);
-        } else if (data && data.length > 0) {
-          const loaded: ScenarioResult[] = data.map((row: any) => {
-            const rd = row.result_data as any;
-            // Support both old JSON format and new narrative format
-            if (typeof rd === "object" && rd.narrative) {
-              return {
-                stakeholder: row.stakeholder,
-                industry: row.industry,
-                narrative: rd.narrative,
-                overallSentiment: rd.overallSentiment || parseSentiment(rd.narrative),
-                createdAt: row.created_at,
-              };
-            }
-            // Legacy JSON format — convert to narrative display using executiveSummary
-            const legacyNarrative = rd.executiveSummary
-              ? `# Stakeholder Perspective: ${row.stakeholder}\n\n**Overall Sentiment: ${rd.overallSentiment || "Concerned"}**\n\n${rd.executiveSummary}\n\n${rd.quotableReaction ? `*"${rd.quotableReaction}"*` : ""}`
-              : `# Stakeholder Perspective: ${row.stakeholder}\n\n(This scenario was generated with an older format. Please re-run to see the full narrative.)`;
+    supabase.functions.invoke("load-intake", {
+      body: { accessCodeId },
+    }).then(({ data, error: loadError }) => {
+      if (loadError) {
+        console.warn("Failed to load scenario results:", loadError);
+      } else if (data?.scenarioResults && data.scenarioResults.length > 0) {
+        const loaded: ScenarioResult[] = data.scenarioResults.map((row: any) => {
+          const rd = row.result_data as any;
+          // Support new narrative format
+          if (typeof rd === "object" && rd.narrative) {
             return {
               stakeholder: row.stakeholder,
               industry: row.industry,
-              narrative: legacyNarrative,
-              overallSentiment: rd.overallSentiment || "Concerned",
-              createdAt: row.created_at,
+              narrative: rd.narrative,
+              overallSentiment: rd.overallSentiment || parseSentiment(rd.narrative),
+              createdAt: row.created_at || new Date().toISOString(),
             };
-          });
-          setResults(loaded);
-        }
-        setIsLoadingFromDb(false);
-      });
+          }
+          // Legacy JSON format — convert to narrative display using executiveSummary
+          const legacyNarrative = rd.executiveSummary
+            ? `# Stakeholder Perspective: ${row.stakeholder}\n\n**Overall Sentiment: ${rd.overallSentiment || "Concerned"}**\n\n${rd.executiveSummary}\n\n${rd.quotableReaction ? `*"${rd.quotableReaction}"*` : ""}`
+            : `# Stakeholder Perspective: ${row.stakeholder}\n\n(This scenario was generated with an older format. Please re-run to see the full narrative.)`;
+          return {
+            stakeholder: row.stakeholder,
+            industry: row.industry,
+            narrative: legacyNarrative,
+            overallSentiment: rd.overallSentiment || "Concerned",
+            createdAt: row.created_at || new Date().toISOString(),
+          };
+        });
+        setResults(loaded);
+      }
+      setIsLoadingFromDb(false);
+    });
   }, []);
 
-  /** Save a result to the database */
+  /** Save a result to the database via save-intake edge function */
   const saveResultToDb = useCallback(async (result: ScenarioResult) => {
-    const submissionId = useIntakeStore.getState().submissionId;
-    if (!submissionId) return;
+    const store = useIntakeStore.getState();
+    const accessCodeId = store._accessCodeId;
+    if (!accessCodeId) return;
 
     try {
-      const { error: upsertError } = await supabase
-        .from("scenario_results")
-        .upsert(
-          {
-            submission_id: submissionId,
+      const { error: saveError } = await supabase.functions.invoke("save-intake", {
+        body: {
+          accessCodeId,
+          scenarioResultData: {
             stakeholder: result.stakeholder,
             industry: result.industry,
             result_data: {
               narrative: result.narrative,
               overallSentiment: result.overallSentiment,
-            } as any,
-            updated_at: new Date().toISOString(),
+            },
           },
-          { onConflict: "submission_id,stakeholder" }
-        );
-
-      if (upsertError) {
-        console.warn("Failed to save scenario result:", upsertError);
+        },
+      });
+      if (saveError) {
+        console.warn("Failed to save scenario result:", saveError);
       }
     } catch (err) {
       console.warn("Failed to save scenario result:", err);
@@ -209,7 +206,7 @@ export function useRunScenario() {
         setStreamingStakeholder("");
         setStreamingText("");
 
-        // Persist to database
+        // Persist to database via edge function (service role key, no direct client access)
         await saveResultToDb(result);
 
         return result;
@@ -227,20 +224,20 @@ export function useRunScenario() {
     [saveResultToDb]
   );
 
-  /** Clear all results (also from DB) */
+  /** Clear all results via save-intake edge function */
   const clearResults = useCallback(async () => {
     setResults([]);
     setStreamingText("");
     setStreamingStakeholder("");
     setError("");
 
-    const submissionId = useIntakeStore.getState().submissionId;
-    if (submissionId) {
+    const store = useIntakeStore.getState();
+    const accessCodeId = store._accessCodeId;
+    if (accessCodeId) {
       try {
-        await supabase
-          .from("scenario_results")
-          .delete()
-          .eq("submission_id", submissionId);
+        await supabase.functions.invoke("save-intake", {
+          body: { accessCodeId, clearScenarioResults: true },
+        });
       } catch (err) {
         console.warn("Failed to clear scenario results from DB:", err);
       }

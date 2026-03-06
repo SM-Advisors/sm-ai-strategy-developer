@@ -15,11 +15,12 @@ import {
   FileX,
   ClipboardList,
   Users,
-  ChevronDown,
-  ChevronUp,
   Eye,
   X,
   Trash2,
+  Pencil,
+  Mail,
+  Building2,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -72,12 +73,31 @@ const Admin = () => {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const { isAdmin, adminUser, setOrgSession } = useAuthStore();
-  const [labelInput, setLabelInput] = useState("");
-  const [deletingSubmissionId, setDeletingSubmissionId] = useState<string | null>(null);
+
+  // Create org form state
+  const [orgNameInput, setOrgNameInput] = useState("");
+  const [sponsorNameInput, setSponsorNameInput] = useState("");
+  const [sponsorEmailInput, setSponsorEmailInput] = useState("");
+  const [sendInvite, setSendInvite] = useState(false);
   const [newCode, setNewCode] = useState<string | null>(null);
+  const [newOrgName, setNewOrgName] = useState<string | null>(null);
+
+  // Invite sponsor modal state
+  const [inviteModalCodeId, setInviteModalCodeId] = useState<string | null>(null);
+  const [inviteModalOrgName, setInviteModalOrgName] = useState("");
+  const [inviteModalSponsorName, setInviteModalSponsorName] = useState("");
+  const [inviteModalSponsorEmail, setInviteModalSponsorEmail] = useState("");
+  const [sendingInvite, setSendingInvite] = useState(false);
+
+  // Inline org name edit state
+  const [editingOrgCodeId, setEditingOrgCodeId] = useState<string | null>(null);
+  const [editingOrgName, setEditingOrgName] = useState("");
+
+  // Other state
   const [copiedId, setCopiedId] = useState<string | null>(null);
   const [downloadingId, setDownloadingId] = useState<string | null>(null);
   const [regeneratingId, setRegeneratingId] = useState<string | null>(null);
+  const [deletingSubmissionId, setDeletingSubmissionId] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<"codes" | "submissions">("codes");
   const [expandedCodeId, setExpandedCodeId] = useState<string | null>(null);
   const [detailSubmission, setDetailSubmission] = useState<Submission | null>(null);
@@ -118,25 +138,77 @@ const Admin = () => {
     enabled: isAdmin,
   });
 
-  // Generate new code mutation
-  const generateMutation = useMutation({
-    mutationFn: async (label: string) => {
+  // Create organization mutation
+  const createOrgMutation = useMutation({
+    mutationFn: async ({
+      orgName,
+      sponsorName,
+      sponsorEmail,
+      invite,
+    }: {
+      orgName: string;
+      sponsorName: string;
+      sponsorEmail: string;
+      invite: boolean;
+    }) => {
       const code = generateCode();
       const { data, error } = await (supabase as any)
         .from("access_codes")
-        .insert({ code, label: label.trim() || null })
+        .insert({ code, label: orgName.trim() || null, org_name: orgName.trim() || null })
         .select()
         .single();
       if (error) throw error;
+
+      if (invite && sponsorEmail.trim()) {
+        const { error: inviteErr } = await supabase.functions.invoke("invite-sponsor", {
+          body: {
+            recipientName: sponsorName.trim() || sponsorEmail.trim(),
+            recipientEmail: sponsorEmail.trim(),
+            accessCode: code,
+            orgName: orgName.trim(),
+            platformUrl: window.location.origin,
+          },
+        });
+        if (inviteErr) {
+          console.warn("Invite email failed (code still created):", inviteErr);
+          toast.warning("Organization created, but invite email failed to send.");
+        } else {
+          toast.success(`Organization created and invite sent to ${sponsorEmail.trim()}`);
+        }
+      } else {
+        toast.success("Organization created");
+      }
+
       return data as AccessCode;
     },
     onSuccess: (data) => {
       setNewCode(data.code);
-      setLabelInput("");
+      setNewOrgName(data.org_name || data.label || null);
+      setOrgNameInput("");
+      setSponsorNameInput("");
+      setSponsorEmailInput("");
+      setSendInvite(false);
       queryClient.invalidateQueries({ queryKey: ["access-codes"] });
-      toast.success("Access code generated");
     },
-    onError: () => toast.error("Failed to generate code. Please try again."),
+    onError: () => toast.error("Failed to create organization. Please try again."),
+  });
+
+  // Update org name mutation
+  const updateOrgNameMutation = useMutation({
+    mutationFn: async ({ id, orgName }: { id: string; orgName: string }) => {
+      const { error } = await (supabase as any)
+        .from("access_codes")
+        .update({ org_name: orgName.trim() || null, label: orgName.trim() || null })
+        .eq("id", id);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      setEditingOrgCodeId(null);
+      setEditingOrgName("");
+      queryClient.invalidateQueries({ queryKey: ["access-codes"] });
+      toast.success("Organization name updated");
+    },
+    onError: () => toast.error("Failed to update organization name."),
   });
 
   // Toggle active status mutation
@@ -160,11 +232,9 @@ const Admin = () => {
   };
 
   const handleEditAsOrg = async (code: AccessCode) => {
-    // Check if there's an existing submission for this code
     const submission = submissions.find((s) => s.access_code_id === code.id);
-    // Find an admin org_user for this code, or use admin info
     const adminOrgUser = code.org_users?.[0];
-    
+
     setOrgSession({
       accessCode: code.code,
       accessCodeId: code.id,
@@ -176,6 +246,33 @@ const Admin = () => {
       hasPlan: !!(submission?.plan_file_path),
     });
     navigate("/intake");
+  };
+
+  const handleSendInvite = async () => {
+    if (!inviteModalCodeId || !inviteModalSponsorEmail.trim()) return;
+    setSendingInvite(true);
+    try {
+      const code = codes.find((c) => c.id === inviteModalCodeId);
+      const { error } = await supabase.functions.invoke("invite-sponsor", {
+        body: {
+          recipientName: inviteModalSponsorName.trim() || inviteModalSponsorEmail.trim(),
+          recipientEmail: inviteModalSponsorEmail.trim(),
+          accessCode: code?.code || "",
+          orgName: inviteModalOrgName || code?.org_name || code?.label || "",
+          platformUrl: window.location.origin,
+        },
+      });
+      if (error) throw error;
+      toast.success(`Invite sent to ${inviteModalSponsorEmail.trim()}`);
+      setInviteModalCodeId(null);
+      setInviteModalSponsorName("");
+      setInviteModalSponsorEmail("");
+      setInviteModalOrgName("");
+    } catch {
+      toast.error("Failed to send invite email.");
+    } finally {
+      setSendingInvite(false);
+    }
   };
 
   const handleDownload = async (submission: Submission) => {
@@ -220,7 +317,6 @@ const Admin = () => {
       }
       if (!resp.body) throw new Error("No response body");
 
-      // Read SSE stream until we get a final data event
       const reader = resp.body.getReader();
       const decoder = new TextDecoder();
       let buffer = "";
@@ -338,6 +434,78 @@ const Admin = () => {
     </div>
   );
 
+  // Invite Sponsor modal
+  const InviteSponsorModal = () => {
+    const code = codes.find((c) => c.id === inviteModalCodeId);
+    if (!inviteModalCodeId || !code) return null;
+    return (
+      <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-4">
+        <div className="bg-background rounded-xl border border-border shadow-2xl w-full max-w-md">
+          <div className="flex items-center justify-between px-6 py-4 border-b border-border">
+            <div>
+              <h2 className="font-serif text-base text-foreground">Invite Executive Sponsor</h2>
+              <p className="text-xs text-muted-foreground mt-0.5 font-mono">{code.code}</p>
+            </div>
+            <button
+              onClick={() => { setInviteModalCodeId(null); setInviteModalSponsorName(""); setInviteModalSponsorEmail(""); setInviteModalOrgName(""); }}
+              className="text-muted-foreground hover:text-foreground p-1 rounded-md hover:bg-muted/50"
+            >
+              <X className="w-5 h-5" />
+            </button>
+          </div>
+          <div className="px-6 py-5 space-y-4">
+            <div>
+              <label className="text-xs font-medium text-muted-foreground mb-1.5 block">Organization Name</label>
+              <Input
+                value={inviteModalOrgName || code.org_name || code.label || ""}
+                onChange={(e) => setInviteModalOrgName(e.target.value)}
+                placeholder="Organization name"
+                className="text-sm"
+              />
+            </div>
+            <div>
+              <label className="text-xs font-medium text-muted-foreground mb-1.5 block">Sponsor Name</label>
+              <Input
+                value={inviteModalSponsorName}
+                onChange={(e) => setInviteModalSponsorName(e.target.value)}
+                placeholder="e.g. Jane Smith"
+                className="text-sm"
+              />
+            </div>
+            <div>
+              <label className="text-xs font-medium text-muted-foreground mb-1.5 block">Sponsor Email <span className="text-destructive">*</span></label>
+              <Input
+                type="email"
+                value={inviteModalSponsorEmail}
+                onChange={(e) => setInviteModalSponsorEmail(e.target.value)}
+                placeholder="jane@company.com"
+                className="text-sm"
+                onKeyDown={(e) => { if (e.key === "Enter") handleSendInvite(); }}
+              />
+            </div>
+          </div>
+          <div className="flex items-center justify-end gap-2 px-6 pb-5">
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => { setInviteModalCodeId(null); setInviteModalSponsorName(""); setInviteModalSponsorEmail(""); setInviteModalOrgName(""); }}
+            >
+              Cancel
+            </Button>
+            <Button
+              size="sm"
+              onClick={handleSendInvite}
+              disabled={sendingInvite || !inviteModalSponsorEmail.trim()}
+            >
+              {sendingInvite ? <Loader2 className="w-3.5 h-3.5 mr-1.5 animate-spin" /> : <Mail className="w-3.5 h-3.5 mr-1.5" />}
+              Send Invite
+            </Button>
+          </div>
+        </div>
+      </div>
+    );
+  };
+
   if (!isAdmin) return null;
 
   return (
@@ -345,6 +513,8 @@ const Admin = () => {
       {detailSubmission && (
         <SubmissionDetail submission={detailSubmission} onClose={() => setDetailSubmission(null)} />
       )}
+      <InviteSponsorModal />
+
       {/* Header */}
       <header className="border-b border-border/50 bg-background/60 backdrop-blur-sm sticky top-0 z-10">
         <div className="max-w-5xl mx-auto px-6 py-4 flex items-center justify-between">
@@ -386,7 +556,7 @@ const Admin = () => {
           >
             <span className="flex items-center gap-1.5">
               <KeyRound className="w-3.5 h-3.5" />
-              Access Codes
+              Organizations
             </span>
           </button>
           <button
@@ -408,44 +578,97 @@ const Admin = () => {
       <main className="max-w-5xl mx-auto px-6 py-8 space-y-10">
         {activeTab === "codes" && (
           <>
-            {/* Generate New Code */}
+            {/* Create Organization */}
             <section className="bg-secondary/40 border border-border rounded-xl p-6 space-y-5">
               <div>
-                <h2 className="font-serif text-xl text-foreground mb-1">Generate Access Code</h2>
+                <h2 className="font-serif text-xl text-foreground mb-1">Create Organization</h2>
                 <p className="text-sm text-muted-foreground">
-                  Create a reusable code to share with a client. Codes are active until you deactivate them.
+                  Create a new organization and generate their access code. Optionally invite the executive sponsor.
                 </p>
               </div>
 
-              <div className="flex flex-col sm:flex-row gap-3">
-                <Input
-                  value={labelInput}
-                  onChange={(e) => setLabelInput(e.target.value)}
-                  placeholder="Organization (optional) — e.g. Acme Corp, Q1 Pilot"
-                  className="flex-1 text-sm"
-                  disabled={generateMutation.isPending}
-                  onKeyDown={(e) => {
-                    if (e.key === "Enter") generateMutation.mutate(labelInput);
-                  }}
-                />
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div className="sm:col-span-2">
+                  <label className="text-xs font-medium text-muted-foreground mb-1.5 block">
+                    Organization Name <span className="text-destructive">*</span>
+                  </label>
+                  <Input
+                    value={orgNameInput}
+                    onChange={(e) => setOrgNameInput(e.target.value)}
+                    placeholder="e.g. Acme Corp"
+                    className="text-sm"
+                    disabled={createOrgMutation.isPending}
+                  />
+                </div>
+                <div>
+                  <label className="text-xs font-medium text-muted-foreground mb-1.5 block">
+                    Executive Sponsor Name
+                  </label>
+                  <Input
+                    value={sponsorNameInput}
+                    onChange={(e) => setSponsorNameInput(e.target.value)}
+                    placeholder="e.g. Jane Smith"
+                    className="text-sm"
+                    disabled={createOrgMutation.isPending}
+                  />
+                </div>
+                <div>
+                  <label className="text-xs font-medium text-muted-foreground mb-1.5 block">
+                    Executive Sponsor Email
+                  </label>
+                  <Input
+                    type="email"
+                    value={sponsorEmailInput}
+                    onChange={(e) => setSponsorEmailInput(e.target.value)}
+                    placeholder="jane@acme.com"
+                    className="text-sm"
+                    disabled={createOrgMutation.isPending}
+                  />
+                </div>
+              </div>
+
+              {sponsorEmailInput.trim() && (
+                <label className="flex items-center gap-2 cursor-pointer w-fit">
+                  <input
+                    type="checkbox"
+                    checked={sendInvite}
+                    onChange={(e) => setSendInvite(e.target.checked)}
+                    className="rounded"
+                  />
+                  <span className="text-sm text-foreground/80">
+                    Send invite email to {sponsorEmailInput.trim()}
+                  </span>
+                </label>
+              )}
+
+              <div className="flex items-center gap-3">
                 <Button
-                  onClick={() => generateMutation.mutate(labelInput)}
-                  disabled={generateMutation.isPending}
+                  onClick={() =>
+                    createOrgMutation.mutate({
+                      orgName: orgNameInput,
+                      sponsorName: sponsorNameInput,
+                      sponsorEmail: sponsorEmailInput,
+                      invite: sendInvite,
+                    })
+                  }
+                  disabled={createOrgMutation.isPending || !orgNameInput.trim()}
                   className="shrink-0"
                 >
-                  {generateMutation.isPending ? (
+                  {createOrgMutation.isPending ? (
                     <Loader2 className="w-4 h-4 mr-2 animate-spin" />
                   ) : (
                     <PlusCircle className="w-4 h-4 mr-2" />
                   )}
-                  Generate Code
+                  Create Organization
                 </Button>
               </div>
 
               {newCode && (
                 <div className="flex items-center justify-between bg-primary/10 border border-primary/30 rounded-lg px-4 py-3">
                   <div>
-                    <p className="text-xs text-muted-foreground mb-0.5">New access code</p>
+                    <p className="text-xs text-muted-foreground mb-0.5">
+                      Access code for {newOrgName || "new organization"}
+                    </p>
                     <p className="font-mono text-lg font-bold tracking-widest text-primary">{newCode}</p>
                   </div>
                   <Button
@@ -464,26 +687,26 @@ const Admin = () => {
               )}
             </section>
 
-            {/* Codes Table */}
+            {/* Organizations Table */}
             <section className="space-y-4">
               <div className="flex items-center justify-between">
-                <h2 className="font-serif text-xl text-foreground">All Access Codes</h2>
+                <h2 className="font-serif text-xl text-foreground">All Organizations</h2>
                 <span className="text-xs text-muted-foreground">{codes.length} total</span>
               </div>
 
               {codesLoading ? (
                 <div className="flex items-center justify-center py-16 text-muted-foreground gap-2">
                   <Loader2 className="w-5 h-5 animate-spin" />
-                  <span className="text-sm">Loading codes...</span>
+                  <span className="text-sm">Loading...</span>
                 </div>
               ) : codes.length === 0 ? (
                 <div className="text-center py-16 text-muted-foreground">
-                  <KeyRound className="w-8 h-8 mx-auto mb-3 opacity-30" />
-                  <p className="text-sm">No access codes yet. Generate your first one above.</p>
+                  <Building2 className="w-8 h-8 mx-auto mb-3 opacity-30" />
+                  <p className="text-sm">No organizations yet. Create your first one above.</p>
                 </div>
               ) : (
                 <div className="border border-border rounded-xl overflow-hidden">
-                  <div className="grid grid-cols-[1fr_1fr_4rem_5rem_5rem_6rem] gap-4 px-5 py-3 bg-secondary/60 border-b border-border text-xs font-medium text-muted-foreground uppercase tracking-wider">
+                  <div className="grid grid-cols-[1fr_1fr_4rem_5rem_5rem_8rem] gap-4 px-5 py-3 bg-secondary/60 border-b border-border text-xs font-medium text-muted-foreground uppercase tracking-wider">
                     <span>Code</span>
                     <span>Organization</span>
                     <span className="text-center">Uses</span>
@@ -494,13 +717,62 @@ const Admin = () => {
 
                   {codes.map((c) => (
                     <div key={c.id} className="border-b border-border/50 last:border-0">
-                      <div className="grid grid-cols-[1fr_1fr_4rem_5rem_5rem_6rem] gap-4 px-5 py-4 items-center hover:bg-secondary/20 transition-colors">
+                      <div className="grid grid-cols-[1fr_1fr_4rem_5rem_5rem_8rem] gap-4 px-5 py-4 items-center hover:bg-secondary/20 transition-colors">
                         <span className="font-mono text-sm font-semibold tracking-widest text-foreground">
                           {c.code}
                         </span>
-                        <span className="text-sm text-muted-foreground truncate">
-                          {c.org_name || c.label || <span className="italic opacity-40">—</span>}
-                        </span>
+
+                        {/* Inline org name edit */}
+                        {editingOrgCodeId === c.id ? (
+                          <div className="flex items-center gap-1">
+                            <Input
+                              value={editingOrgName}
+                              onChange={(e) => setEditingOrgName(e.target.value)}
+                              className="h-7 text-xs px-2"
+                              autoFocus
+                              onKeyDown={(e) => {
+                                if (e.key === "Enter") updateOrgNameMutation.mutate({ id: c.id, orgName: editingOrgName });
+                                if (e.key === "Escape") { setEditingOrgCodeId(null); setEditingOrgName(""); }
+                              }}
+                            />
+                            <Button
+                              size="icon"
+                              variant="ghost"
+                              className="w-6 h-6 text-green-500 hover:text-green-400 shrink-0"
+                              disabled={updateOrgNameMutation.isPending}
+                              onClick={() => updateOrgNameMutation.mutate({ id: c.id, orgName: editingOrgName })}
+                            >
+                              {updateOrgNameMutation.isPending ? <Loader2 className="w-3 h-3 animate-spin" /> : <Check className="w-3 h-3" />}
+                            </Button>
+                            <Button
+                              size="icon"
+                              variant="ghost"
+                              className="w-6 h-6 text-muted-foreground hover:text-foreground shrink-0"
+                              onClick={() => { setEditingOrgCodeId(null); setEditingOrgName(""); }}
+                            >
+                              <X className="w-3 h-3" />
+                            </Button>
+                          </div>
+                        ) : (
+                          <div className="flex items-center gap-1 group">
+                            <span className="text-sm text-muted-foreground truncate">
+                              {c.org_name || c.label || <span className="italic opacity-40">—</span>}
+                            </span>
+                            <Button
+                              size="icon"
+                              variant="ghost"
+                              className="w-5 h-5 opacity-0 group-hover:opacity-100 transition-opacity text-muted-foreground hover:text-foreground shrink-0"
+                              title="Edit org name"
+                              onClick={() => {
+                                setEditingOrgCodeId(c.id);
+                                setEditingOrgName(c.org_name || c.label || "");
+                              }}
+                            >
+                              <Pencil className="w-3 h-3" />
+                            </Button>
+                          </div>
+                        )}
+
                         <div className="flex items-center justify-center gap-1">
                           <span className="text-sm text-muted-foreground">{c.use_count}</span>
                           {(c.org_users?.length ?? 0) > 0 && (
@@ -524,7 +796,19 @@ const Admin = () => {
                         <span className="text-xs text-center text-muted-foreground">
                           {format(new Date(c.created_at), "MMM d")}
                         </span>
-                        <div className="flex items-center justify-center gap-1.5">
+                        <div className="flex items-center justify-center gap-1">
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="w-7 h-7 text-muted-foreground hover:text-foreground"
+                            title="Invite sponsor"
+                            onClick={() => {
+                              setInviteModalCodeId(c.id);
+                              setInviteModalOrgName(c.org_name || c.label || "");
+                            }}
+                          >
+                            <Mail className="w-3.5 h-3.5" />
+                          </Button>
                           <Button
                             variant="ghost"
                             size="icon"

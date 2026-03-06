@@ -1,5 +1,6 @@
 import { useState, useCallback, useRef } from "react";
 import { useIntakeStore } from "@/stores/intake-store";
+import { supabase } from "@/integrations/supabase/client";
 
 // --- Types ---
 
@@ -121,28 +122,16 @@ export function useAndreaPlanReview() {
           .slice(-20)
           .map((m) => ({ role: m.role, content: m.content }));
 
-        const url = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/andrea-plan-review`;
-        const resp = await fetch(url, {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
-          },
-          body: JSON.stringify({
+        const { data, error: invokeError } = await supabase.functions.invoke("andrea-plan-review", {
+          body: {
             messages: apiMessages,
             planMarkdown,
             companyName,
             industry,
-          }),
-          signal: controller.signal,
+          },
         });
 
-        if (!resp.ok) {
-          const errData = await resp.json().catch(() => ({}));
-          throw new Error(errData.error || `Error ${resp.status}`);
-        }
-
-        const data = await resp.json();
+        if (invokeError) throw new Error(invokeError.message || "andrea-plan-review failed");
 
         const assistantMessage: PlanReviewMessage = {
           id: crypto.randomUUID(),

@@ -226,7 +226,7 @@ Follow the template structure exactly. Make every paragraph specific to this org
       );
     }
 
-    // Stream the SSE response back to the client (same pattern as generate-plan)
+    // Stream the SSE response back to the client
     const { readable, writable } = new TransformStream();
     const writer = writable.getWriter();
     const encoder = new TextEncoder();
