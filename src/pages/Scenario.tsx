@@ -27,7 +27,7 @@ const LOADING_MESSAGES = [
 
 const Scenario = () => {
   const navigate = useNavigate();
-  const { generatedPlan, companyName, industry } = useIntakeStore();
+  const { generatedPlan, companyName, industry, isLoadingFromServer } = useIntakeStore();
   const { results, isRunning, isLoadingFromDb, currentStakeholder, streamingStakeholder, streamingText, error, runScenario, clearResults } = useRunScenario();
 
   const [selectedStakeholder, setSelectedStakeholder] = useState<StakeholderType>("Company Leadership");
@@ -35,12 +35,12 @@ const Scenario = () => {
   const [loadingMessageIndex, setLoadingMessageIndex] = useState(0);
   const loadingIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
-  // Redirect if no plan
+  // Redirect if no plan — but not while server data is still loading
   useEffect(() => {
-    if (!generatedPlan) {
+    if (!generatedPlan && !isLoadingFromServer) {
       navigate("/plan", { replace: true });
     }
-  }, [generatedPlan, navigate]);
+  }, [generatedPlan, isLoadingFromServer, navigate]);
 
   useEffect(() => {
     document.title = `Scenario Runner — ${companyName || "Organization"}`;

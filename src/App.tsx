@@ -13,6 +13,7 @@ import NotFound from "./pages/NotFound";
 import ProtectedRoute from "./components/ProtectedRoute";
 import { supabase } from "./integrations/supabase/client";
 import { useAuthStore } from "./stores/auth-store";
+import { useIntakeStore } from "./stores/intake-store";
 
 const queryClient = new QueryClient();
 
@@ -39,6 +40,21 @@ function AuthProvider({ children }: { children: React.ReactNode }) {
   return <>{children}</>;
 }
 
+// Loads org data from the server whenever a session is established, regardless of which
+// page the user lands on (handles refresh on /plan, /scenario, direct links, etc.)
+function DataLoader() {
+  const { session } = useAuthStore();
+  const { loadFromServer } = useIntakeStore();
+
+  useEffect(() => {
+    if (session?.accessCodeId) {
+      loadFromServer(session.accessCodeId, session.orgUserId ?? undefined);
+    }
+  }, [session?.accessCodeId]);
+
+  return null;
+}
+
 const App = () => (
   <QueryClientProvider client={queryClient}>
     <TooltipProvider>
@@ -46,6 +62,7 @@ const App = () => (
       <Sonner />
       <BrowserRouter>
         <AuthProvider>
+          <DataLoader />
           <Routes>
             <Route path="/" element={<Index />} />
             <Route path="/intake" element={<ProtectedRoute><Intake /></ProtectedRoute>} />

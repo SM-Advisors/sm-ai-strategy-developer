@@ -3,7 +3,7 @@ import { useIntakeStore, PlanVersion } from "@/stores/intake-store";
 import { useAuthStore } from "@/stores/auth-store";
 import { useGeneratePlan } from "@/hooks/use-generate-plan";
 import { Button } from "@/components/ui/button";
-import { ArrowLeft, Download, RefreshCw, FlaskConical, Pencil, Check, X, ChevronDown, ChevronLeft, ChevronRight } from "lucide-react";
+import { ArrowLeft, Download, RefreshCw, FlaskConical, Pencil, Check, X, ChevronDown, ChevronLeft, ChevronRight, Loader2 } from "lucide-react";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import PlanTocSidebar from "@/components/plan/PlanTocSidebar";
@@ -25,7 +25,7 @@ const Plan = () => {
   const {
     generatedPlan, isGenerating, companyName, submissionId, setGeneratedPlan,
     planVersions, currentPlanVersion, setPlanVersions, setCurrentPlanVersion, loadPlanVersion,
-    _accessCodeId,
+    _accessCodeId, isLoadingFromServer,
   } = useIntakeStore();
   const { session } = useAuthStore();
   const { generate } = useGeneratePlan();
@@ -37,15 +37,14 @@ const Plan = () => {
   const contentRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
-  // Redirect if no plan (but not while regenerating — that would trigger loadFromServer on Intake and restore the old plan)
+  // All hooks must be declared before any conditional returns (React Rules of Hooks)
+
+  // Redirect if no plan — but not while generating or while server data is still loading
   useEffect(() => {
-    if (!generatedPlan && !isGenerating) {
+    if (!generatedPlan && !isGenerating && !isLoadingFromServer) {
       navigate("/intake", { replace: true });
     }
-  }, [generatedPlan, isGenerating, navigate]);
-
-  // Show generating overlay on this page when regenerating so Intake never mounts
-  if (isGenerating) return <GeneratingOverlay />;
+  }, [generatedPlan, isGenerating, isLoadingFromServer, navigate]);
 
   useEffect(() => {
     document.title = `${companyName || "Organization"} — AI Strategic Plan`;
@@ -93,6 +92,20 @@ const Plan = () => {
       .replace(/\s+/g, "-")
       .replace(/-+/g, "-");
   }, []);
+
+  // Conditional returns are safe here — all hooks are already declared above
+  if (isGenerating) return <GeneratingOverlay />;
+
+  if (isLoadingFromServer) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <div className="flex items-center gap-3 text-muted-foreground">
+          <Loader2 className="w-5 h-5 animate-spin" />
+          <span className="text-sm">Loading your plan...</span>
+        </div>
+      </div>
+    );
+  }
 
   const handleEnterEdit = () => {
     setEditDraft(generatedPlan);
