@@ -25,13 +25,16 @@ const FormField = ({ field, error, questionNumber }: FormFieldProps) => {
 
   const autoResize = useCallback((el: HTMLTextAreaElement | null) => {
     if (!el) return;
-    el.style.height = "auto";
-    el.style.height = el.scrollHeight + "px";
+    // Reset to minimum so scrollHeight recalculates correctly
+    el.style.height = "0px";
+    const newHeight = Math.max(el.scrollHeight, 38); // min ~1 row
+    el.style.height = newHeight + "px";
   }, []);
 
   useEffect(() => {
     if (field.type === "textarea") {
-      autoResize(textareaRef.current);
+      // Use rAF to ensure DOM has rendered with the new value
+      requestAnimationFrame(() => autoResize(textareaRef.current));
     }
   }, [value, field.type, autoResize]);
 
