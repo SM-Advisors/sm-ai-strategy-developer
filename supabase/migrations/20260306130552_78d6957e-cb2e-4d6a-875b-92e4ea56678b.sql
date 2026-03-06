@@ -1,0 +1,1 @@
+CREATE POLICY "public_delete_scenario_results" ON public.scenario_results FOR DELETE TO anon, authenticated USING (true);

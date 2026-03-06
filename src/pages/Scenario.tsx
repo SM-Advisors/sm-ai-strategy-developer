@@ -26,7 +26,7 @@ const LOADING_MESSAGES = [
 const Scenario = () => {
   const navigate = useNavigate();
   const { generatedPlan, companyName, industry } = useIntakeStore();
-  const { results, isRunning, currentStakeholder, error, runScenario, clearResults } = useRunScenario();
+  const { results, isRunning, isLoadingFromDb, currentStakeholder, error, runScenario, clearResults } = useRunScenario();
 
   const [selectedStakeholder, setSelectedStakeholder] = useState<StakeholderType>("Company Leadership");
   const [customIndustry, setCustomIndustry] = useState(industry || "");
@@ -268,18 +268,33 @@ const Scenario = () => {
             {/* Individual Results */}
             <div className="space-y-6">
               {results.map((result) => (
-                <ScenarioResultCard key={result.stakeholder} result={result} />
+                <ScenarioResultCard
+                  key={result.stakeholder}
+                  result={result}
+                  onRegenerate={() => {
+                    setSelectedStakeholder(result.stakeholder as StakeholderType);
+                    runScenario(result.stakeholder, customIndustry.trim() || result.industry);
+                  }}
+                  isRegenerating={isRunning && currentStakeholder === result.stakeholder}
+                />
               ))}
             </div>
           </div>
         )}
 
         {/* Empty state */}
-        {results.length === 0 && !isRunning && (
+        {results.length === 0 && !isRunning && !isLoadingFromDb && (
           <div className="text-center py-16 text-muted-foreground">
             <FlaskConical className="w-12 h-12 mx-auto mb-4 opacity-30" />
             <p className="text-sm">Select a stakeholder and run a scenario to see results.</p>
             <p className="text-xs mt-1">Each scenario simulates how that stakeholder group would react to your AI Strategic Plan.</p>
+          </div>
+        )}
+
+        {isLoadingFromDb && results.length === 0 && (
+          <div className="text-center py-16">
+            <Loader2 className="w-10 h-10 mx-auto mb-5 animate-spin text-primary/40" />
+            <p className="text-sm text-muted-foreground">Loading previous scenario results...</p>
           </div>
         )}
 

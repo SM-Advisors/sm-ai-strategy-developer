@@ -1,11 +1,14 @@
 import { useState } from "react";
 import { cn } from "@/lib/utils";
-import { ChevronDown, ChevronUp, Quote, AlertTriangle, AlertCircle, Info, ArrowUp } from "lucide-react";
+import { ChevronDown, ChevronUp, Quote, AlertTriangle, AlertCircle, Info, ArrowUp, RefreshCw } from "lucide-react";
+import { Button } from "@/components/ui/button";
 import { Collapsible, CollapsibleTrigger, CollapsibleContent } from "@/components/ui/collapsible";
 import type { ScenarioResult, ScenarioRecommendation, ScenarioRisk } from "@/hooks/use-run-scenario";
 
 interface ScenarioResultCardProps {
   result: ScenarioResult;
+  onRegenerate?: () => void;
+  isRegenerating?: boolean;
 }
 
 const sentimentColors: Record<string, { bg: string; text: string; border: string }> = {
@@ -66,7 +69,7 @@ function RiskRow({ risk }: { risk: ScenarioRisk }) {
   );
 }
 
-export default function ScenarioResultCard({ result }: ScenarioResultCardProps) {
+export default function ScenarioResultCard({ result, onRegenerate, isRegenerating }: ScenarioResultCardProps) {
   const [phasesOpen, setPhasesOpen] = useState(false);
   const [risksOpen, setRisksOpen] = useState(false);
   const sentiment = sentimentColors[result.overallSentiment] || sentimentColors.Concerned;
@@ -77,9 +80,23 @@ export default function ScenarioResultCard({ result }: ScenarioResultCardProps) 
       <div className={cn("px-5 py-4 border-b", sentiment.border, sentiment.bg)}>
         <div className="flex items-center justify-between gap-3">
           <h3 className="font-semibold text-gray-900">{result.stakeholder}</h3>
-          <span className={cn("text-sm font-medium px-3 py-1 rounded-full", sentiment.bg, sentiment.text, "border", sentiment.border)}>
-            {result.overallSentiment}
-          </span>
+          <div className="flex items-center gap-2">
+            {onRegenerate && (
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={onRegenerate}
+                disabled={isRegenerating}
+                className="gap-1.5 text-xs h-7"
+              >
+                <RefreshCw className={cn("w-3 h-3", isRegenerating && "animate-spin")} />
+                {isRegenerating ? "Regenerating..." : "Regenerate"}
+              </Button>
+            )}
+            <span className={cn("text-sm font-medium px-3 py-1 rounded-full", sentiment.bg, sentiment.text, "border", sentiment.border)}>
+              {result.overallSentiment}
+            </span>
+          </div>
         </div>
         <p className="text-sm text-gray-600 mt-1">{result.sentimentRationale}</p>
       </div>
