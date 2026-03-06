@@ -3,7 +3,7 @@ import { useIntakeStore, PlanVersion } from "@/stores/intake-store";
 import { useAuthStore } from "@/stores/auth-store";
 import { useGeneratePlan } from "@/hooks/use-generate-plan";
 import { Button } from "@/components/ui/button";
-import { ArrowLeft, FileText, FileDown, FileType, RefreshCw, FlaskConical, Pencil, Check, X, ChevronDown, History } from "lucide-react";
+import { ArrowLeft, Download, RefreshCw, FlaskConical, Pencil, Check, X, ChevronDown, ChevronLeft, ChevronRight } from "lucide-react";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import PlanTocSidebar from "@/components/plan/PlanTocSidebar";
