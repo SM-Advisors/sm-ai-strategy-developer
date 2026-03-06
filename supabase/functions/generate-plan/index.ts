@@ -159,6 +159,7 @@ This section helps leadership and stakeholders understand the confidence level o
 - Keep language executive-friendly — no jargon without explanation
 - Be specific and actionable — avoid generic consulting platitudes
 - Reference the organization by name throughout
+- **NEVER use emojis, emoji icons, or Unicode symbols (e.g., ⭐, 🔄, ✅, 📊, etc.) anywhere in the plan.** Use plain text only. Use markdown formatting (bold, headers, bullet points, tables) for emphasis and structure instead.
 - Total length: 5,000-8,000 words`;
 
 function buildUserPrompt(data: Record<string, any>): string {
