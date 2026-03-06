@@ -11,6 +11,13 @@ export interface ScenarioChatMessage {
   suggestedPrompts?: string[];
 }
 
+export interface ScenarioChatConversation {
+  id: string;
+  title: string;
+  messages: ScenarioChatMessage[];
+  createdAt: number;
+}
+
 // --- Constants ---
 
 const INITIAL_PROMPTS = [
@@ -27,25 +34,58 @@ const WELCOME_MESSAGE: ScenarioChatMessage = {
   suggestedPrompts: INITIAL_PROMPTS,
 };
 
+function createConversation(): ScenarioChatConversation {
+  return {
+    id: crypto.randomUUID(),
+    title: "New conversation",
+    messages: [WELCOME_MESSAGE],
+    createdAt: Date.now(),
+  };
+}
+
+function deriveTitle(text: string): string {
+  const cleaned = text.trim().replace(/\n+/g, " ");
+  return cleaned.length > 40 ? cleaned.slice(0, 40) + "…" : cleaned;
+}
+
 // --- Hook ---
 
 export function useAndreaScenarioChat() {
-  const [messages, setMessages] = useState<ScenarioChatMessage[]>([WELCOME_MESSAGE]);
+  const [conversations, setConversations] = useState<ScenarioChatConversation[]>(() => [createConversation()]);
+  const [activeId, setActiveId] = useState<string>(() => conversations[0]?.id ?? "");
   const [isLoading, setIsLoading] = useState(false);
   const abortRef = useRef<AbortController | null>(null);
   const scenarioResultsRef = useRef<ScenarioResult[]>([]);
 
-  /** Update scenario results reference (call when new results come in) */
+  const activeConversation = conversations.find((c) => c.id === activeId) ?? conversations[0];
+  const messages = activeConversation?.messages ?? [WELCOME_MESSAGE];
+
   const updateScenarioResults = useCallback((results: ScenarioResult[]) => {
     scenarioResultsRef.current = results;
   }, []);
 
-  /** Get latest suggested prompts */
   const latestPrompts =
     [...messages].reverse().find((m) => m.role === "assistant" && m.suggestedPrompts?.length)
       ?.suggestedPrompts ?? [];
 
-  /** Send a user message */
+  const updateActiveMessages = useCallback(
+    (updater: (prev: ScenarioChatMessage[]) => ScenarioChatMessage[]) => {
+      setConversations((prev) =>
+        prev.map((c) => (c.id === activeId ? { ...c, messages: updater(c.messages) } : c))
+      );
+    },
+    [activeId]
+  );
+
+  const updateActiveTitle = useCallback(
+    (title: string) => {
+      setConversations((prev) =>
+        prev.map((c) => (c.id === activeId ? { ...c, title } : c))
+      );
+    },
+    [activeId]
+  );
+
   const sendMessage = useCallback(
     async (text: string) => {
       if (!text.trim() || isLoading) return;
@@ -56,7 +96,12 @@ export function useAndreaScenarioChat() {
         content: text.trim(),
       };
 
-      setMessages((prev) => [...prev, userMessage]);
+      const isFirstUserMsg = !messages.some((m) => m.role === "user");
+      if (isFirstUserMsg) {
+        updateActiveTitle(deriveTitle(text));
+      }
+
+      updateActiveMessages((prev) => [...prev, userMessage]);
       setIsLoading(true);
 
       abortRef.current?.abort();
@@ -107,7 +152,7 @@ export function useAndreaScenarioChat() {
               : undefined,
         };
 
-        setMessages((prev) => [...prev, assistantMessage]);
+        updateActiveMessages((prev) => [...prev, assistantMessage]);
       } catch (err: any) {
         if (err.name === "AbortError") return;
 
@@ -119,19 +164,69 @@ export function useAndreaScenarioChat() {
           content: "I'm sorry, I had trouble connecting. Please try sending your message again.",
           suggestedPrompts: ["Try again"],
         };
-        setMessages((prev) => [...prev, errorMessage]);
+        updateActiveMessages((prev) => [...prev, errorMessage]);
       } finally {
         setIsLoading(false);
       }
     },
-    [isLoading, messages]
+    [isLoading, messages, updateActiveMessages, updateActiveTitle]
+  );
+
+  const cancelRequest = useCallback(() => {
+    abortRef.current?.abort();
+    abortRef.current = null;
+    setIsLoading(false);
+  }, []);
+
+  const startNewChat = useCallback(() => {
+    abortRef.current?.abort();
+    abortRef.current = null;
+    setIsLoading(false);
+    const newConvo = createConversation();
+    setConversations((prev) => [newConvo, ...prev]);
+    setActiveId(newConvo.id);
+  }, []);
+
+  const switchConversation = useCallback(
+    (conversationId: string) => {
+      if (conversationId === activeId) return;
+      abortRef.current?.abort();
+      abortRef.current = null;
+      setIsLoading(false);
+      setActiveId(conversationId);
+    },
+    [activeId]
+  );
+
+  const deleteConversation = useCallback(
+    (conversationId: string) => {
+      setConversations((prev) => {
+        const filtered = prev.filter((c) => c.id !== conversationId);
+        if (conversationId === activeId) {
+          if (filtered.length === 0) {
+            const newConvo = createConversation();
+            setActiveId(newConvo.id);
+            return [newConvo];
+          }
+          setActiveId(filtered[0].id);
+        }
+        return filtered;
+      });
+    },
+    [activeId]
   );
 
   return {
     messages,
     isLoading,
     latestPrompts,
+    conversations,
+    activeConversationId: activeId,
     sendMessage,
+    cancelRequest,
+    startNewChat,
+    switchConversation,
+    deleteConversation,
     updateScenarioResults,
   };
 }
