@@ -30,8 +30,6 @@ The organization has provided an annual AI budget. Structure financial estimates
 ---
 
 # AI Strategic Plan: [Insert Company Name]
-**Prepared by SM Advisors**
-**Date: [Insert current date]**
 **Confidential**
 
 ---
@@ -510,8 +508,7 @@ serve(async (req) => {
     if (!formData || !submissionId) throw new Error("formData and submissionId are required");
 
     const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
-    const today = new Date().toLocaleDateString("en-US", { month: "long", day: "numeric", year: "numeric" });
-    const userPrompt = `Today's date is ${today}. Use this exact date on the "Date:" line of the plan.\n\n${buildUserPrompt(formData)}`;
+    const userPrompt = buildUserPrompt(formData);
 
     // Stream from Anthropic and accumulate full plan, while sending keepalives to client
     const anthropicResp = await fetch("https://api.anthropic.com/v1/messages", {
@@ -525,10 +522,7 @@ serve(async (req) => {
         model: "claude-sonnet-4-6",
         max_tokens: 16384,
         stream: true,
-        system: SYSTEM_PROMPT.replace(
-          "[Insert current date]",
-          new Date().toLocaleDateString("en-US", { month: "long", day: "numeric", year: "numeric" })
-        ),
+        system: SYSTEM_PROMPT,
         messages: [{ role: "user", content: userPrompt }],
       }),
     });
@@ -588,9 +582,6 @@ serve(async (req) => {
         }
 
         if (!planText) throw new Error("No plan text received from Anthropic");
-
-        // Ensure the date line reflects the actual generation date
-        planText = planText.replace(/\*\*Date:.*?\*\*/m, `**Date: ${today}**`);
 
         // Upload to storage
         const fileName = `${submissionId}/plan.md`;

@@ -29,8 +29,6 @@ The organization has provided an annual AI budget. Structure financial estimates
 ---
 
 # AI Strategic Plan: [Insert Company Name]
-**Prepared by SM Advisors**
-**Date: [Insert current date]**
 **Confidential**
 
 ---
@@ -507,8 +505,7 @@ serve(async (req) => {
       throw new Error("No form data provided");
     }
 
-    const today = new Date().toLocaleDateString("en-US", { month: "long", day: "numeric", year: "numeric" });
-    const userPrompt = `Today's date is ${today}. Use this exact date on the "Date:" line of the plan.\n\n${buildUserPrompt(formData)}`;
+    const userPrompt = buildUserPrompt(formData);
 
     const response = await fetch("https://api.anthropic.com/v1/messages", {
       method: "POST",
@@ -521,10 +518,7 @@ serve(async (req) => {
         model: "claude-sonnet-4-6",
         max_tokens: 16384,
         stream: true,
-        system: SYSTEM_PROMPT.replace(
-          "[Insert current date]",
-          new Date().toLocaleDateString("en-US", { month: "long", day: "numeric", year: "numeric" })
-        ),
+        system: SYSTEM_PROMPT,
         messages: [{ role: "user", content: userPrompt }],
       }),
     });
