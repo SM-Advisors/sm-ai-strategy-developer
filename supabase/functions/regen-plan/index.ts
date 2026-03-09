@@ -583,13 +583,30 @@ serve(async (req) => {
 
         if (!planText) throw new Error("No plan text received from Anthropic");
 
+        // Determine next version number
+        const { data: existingVersions } = await supabase
+          .from("plan_versions")
+          .select("version_number")
+          .eq("submission_id", submissionId)
+          .order("version_number", { ascending: false })
+          .limit(1);
+        const nextVersion = existingVersions && existingVersions.length > 0
+          ? existingVersions[0].version_number + 1
+          : 1;
+        const fileName = `${submissionId}/plan-v${nextVersion}.md`;
+
         // Upload to storage
-        const fileName = `${submissionId}/plan.md`;
         const blob = new Blob([planText], { type: "text/markdown" });
         const { error: uploadErr } = await supabase.storage
           .from("plans")
           .upload(fileName, blob, { contentType: "text/markdown", upsert: true });
         if (uploadErr) throw new Error(`Storage upload failed: ${uploadErr.message}`);
+
+        // Create version record
+        const { error: versionErr } = await supabase
+          .from("plan_versions")
+          .insert({ submission_id: submissionId, version_number: nextVersion, file_path: fileName, label: "Regenerated" });
+        if (versionErr) throw new Error(`Version insert failed: ${versionErr.message}`);
 
         // Update submission
         const { error: updateErr } = await supabase
@@ -599,7 +616,7 @@ serve(async (req) => {
         if (updateErr) throw new Error(`DB update failed: ${updateErr.message}`);
 
         // Send final success event
-        await writer.write(encoder.encode(`data: ${JSON.stringify({ success: true, plan_file_path: fileName })}\n\n`));
+        await writer.write(encoder.encode(`data: ${JSON.stringify({ success: true, plan_file_path: fileName, version_number: nextVersion })}\n\n`));
         console.log("regen-plan success:", fileName);
       } catch (err) {
         console.error("regen-plan background error:", err);
