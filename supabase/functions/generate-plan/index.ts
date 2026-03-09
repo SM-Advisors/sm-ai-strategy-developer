@@ -507,7 +507,8 @@ serve(async (req) => {
       throw new Error("No form data provided");
     }
 
-    const userPrompt = buildUserPrompt(formData);
+    const today = new Date().toLocaleDateString("en-US", { month: "long", day: "numeric", year: "numeric" });
+    const userPrompt = `Today's date is ${today}. Use this exact date on the "Date:" line of the plan.\n\n${buildUserPrompt(formData)}`;
 
     const response = await fetch("https://api.anthropic.com/v1/messages", {
       method: "POST",
