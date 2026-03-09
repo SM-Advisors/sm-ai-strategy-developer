@@ -520,7 +520,10 @@ serve(async (req) => {
         model: "claude-sonnet-4-6",
         max_tokens: 16384,
         stream: true,
-        system: SYSTEM_PROMPT,
+        system: SYSTEM_PROMPT.replace(
+          "[Insert current date]",
+          new Date().toLocaleDateString("en-US", { month: "long", day: "numeric", year: "numeric" })
+        ),
         messages: [{ role: "user", content: userPrompt }],
       }),
     });
