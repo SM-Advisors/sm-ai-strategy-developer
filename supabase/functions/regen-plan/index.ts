@@ -510,7 +510,8 @@ serve(async (req) => {
     if (!formData || !submissionId) throw new Error("formData and submissionId are required");
 
     const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
-    const userPrompt = buildUserPrompt(formData);
+    const today = new Date().toLocaleDateString("en-US", { month: "long", day: "numeric", year: "numeric" });
+    const userPrompt = `Today's date is ${today}. Use this exact date on the "Date:" line of the plan.\n\n${buildUserPrompt(formData)}`;
 
     // Stream from Anthropic and accumulate full plan, while sending keepalives to client
     const anthropicResp = await fetch("https://api.anthropic.com/v1/messages", {
@@ -587,6 +588,9 @@ serve(async (req) => {
         }
 
         if (!planText) throw new Error("No plan text received from Anthropic");
+
+        // Ensure the date line reflects the actual generation date
+        planText = planText.replace(/\*\*Date:.*?\*\*/m, `**Date: ${today}**`);
 
         // Upload to storage
         const fileName = `${submissionId}/plan.md`;
